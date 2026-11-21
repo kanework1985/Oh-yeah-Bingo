@@ -1361,6 +1361,79 @@
       pointer-events: none;
     }
 
+    /* Void Cards Manager */
+    .void-quick-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .void-quick-row input {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .void-quick-row input:focus {
+      border-color: var(--gold-light);
+    }
+
+    .void-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+      gap: 6px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+    }
+
+    .void-card-btn {
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      background: rgba(20, 83, 45, 0.3);
+      color: #dcfce7;
+      padding: 6px 4px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .void-card-btn:hover {
+      border-color: var(--gold-light);
+    }
+
+    .void-card-btn.is-void {
+      border-color: rgba(239, 68, 68, 0.65);
+      background: rgba(127, 29, 29, 0.55);
+      color: #fca5a5;
+      text-decoration: line-through;
+      opacity: 0.78;
+    }
+
+    .void-banner {
+      background: rgba(185, 28, 28, 0.32);
+      border: 1.5px solid #f87171;
+      color: #fecaca;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
     /* Settings Modal Controls */
     .setting-group {
       background: rgba(0, 0, 0, 0.35);
@@ -1685,7 +1758,8 @@
       <!-- Auto Matching Panel -->
       <div class="board-card match-section">
         <div class="board-card-header">
-          <span class="board-card-title">⚡ 自動配對即時追蹤（卡池 <span id="poolCountLabel">100</span> 張）</span>
+          <span class="board-card-title">⚡ 自動配對追蹤（<span id="poolCountLabel">有效 100 張</span>）</span>
+          <button id="btnOpenVoidModal" class="preset-btn" type="button" title="將現場未發出的剩餘紙卡作廢排除">🚫 廢牌管理</button>
         </div>
 
         <div class="match-subbox winners-box">
@@ -1793,6 +1867,7 @@
 
         <button id="btnGenerateCards" class="primary-btn" type="button">✨ 生成新卡池並同步存檔</button>
         <button id="btnPrintCards" class="secondary-btn" type="button">🖨️ A4 批量列印 / 另存 PDF</button>
+        <button id="btnOpenVoidModalTab2" class="secondary-btn" type="button">🚫 未發出剩餘卡片作廢管理</button>
       </div>
 
       <!-- Preview Panel -->
@@ -1934,6 +2009,52 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: VOID UNISSUED CARDS MANAGER ================= -->
+  <div class="modal-backdrop" id="modalVoidCards">
+    <div class="modal-box" style="max-width:620px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🚫 未發出卡片作廢管理（排除計算）</h3>
+        <button type="button" class="modal-close" data-close="modalVoidCards">✕</button>
+      </div>
+
+      <div style="font-size:13px;color:#fef3c7;line-height:1.6;margin-bottom:12px;">
+        作廢後的卡片將<strong>完全排除於系統計算之外</strong>：不會列入中獎達標、不會列入聽牌追蹤、不會佔用中獎名額上限，驗卡時亦會直接顯示為「作廢廢牌」。
+      </div>
+
+      <!-- Fast Cutoff: Issued up to No. X -->
+      <div class="setting-group">
+        <div class="setting-label">⚡ 快捷設定：現場最後發出的卡號（之後的未發出卡片全數作廢）</div>
+        <div class="void-quick-row">
+          <span style="font-size:12px;color:var(--text-muted)">現場只發到第</span>
+          <input id="voidCutoffInput" type="number" min="0" max="500" placeholder="例如 82" style="width:96px;" />
+          <span style="font-size:12px;color:var(--text-muted)">號</span>
+          <button id="btnApplyVoidCutoff" class="btn-warn" type="button" style="padding:7px 14px;font-size:12px;">套用（後方全數作廢）</button>
+        </div>
+      </div>
+
+      <!-- Custom Range / Specific Numbers -->
+      <div class="setting-group">
+        <div class="setting-label">✏️ 指定單張或區間作廢（支援逗號與連字號，例如：5, 12, 83-100）</div>
+        <div class="void-quick-row">
+          <input id="voidRangeInput" type="text" placeholder="輸入卡號或區間，如 5, 12, 83-100" style="flex:1;min-width:180px;" />
+          <button id="btnAddVoidRange" class="btn-danger" type="button" style="padding:7px 12px;font-size:12px;">加入作廢</button>
+          <button id="btnRestoreVoidRange" class="btn-ghost" type="button" style="padding:7px 12px;font-size:12px;">恢復有效</button>
+        </div>
+      </div>
+
+      <!-- Visual Toggle Grid -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:800;color:var(--gold-light)" id="voidStatsLabel">有效：100 張｜已作廢：0 張</span>
+        <button id="btnClearAllVoid" class="preset-btn" type="button">♻️ 全部恢復有效</button>
+      </div>
+      <div class="void-grid" id="voidCardGrid"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="primary-btn" style="width:auto;padding:9px 24px;" data-close="modalVoidCards">完成並套用</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= MODAL: SYSTEM ALERT / THRESHOLD CONFIRM ================= -->
   <div class="modal-backdrop" id="modalAlert">
     <div class="modal-box" style="max-width:480px;">
@@ -1993,6 +2114,7 @@
         <ul>
           <li>每開出一球即自動掃描全卡池，右側看板即時列出<strong>「🎉 已中獎達標」</strong>與<strong>「🔥 聽牌中（缺碼）」</strong>卡號，點擊任一卡號或在下方輸入編號即可彈出完整矩陣高亮對獎圖。</li>
           <li>切換至<strong>「🖨️ 紙卡設定與批量列印」</strong>可依智慧建議調整參數並以 A4（每頁 2 張或 4 張）批量列印。</li>
+          <li><strong>未發出廢牌作廢：</strong>點擊「🚫 廢牌管理」可一鍵將現場未發出的剩餘卡號（如 83–100 號）設為作廢，系統將自動完全排除於中獎、聽牌與名額控管計算之外。</li>
           <li>事前印卡後請按<strong>「💾 匯出備份」</strong>存下 <code>.json</code>，至活動現場即使完全斷網，亦可直接開啟本頁並<strong>「📂 匯入備份」</strong>同步卡池。</li>
         </ul>
       </div>
@@ -2021,6 +2143,7 @@
         maxWinners: 5, // 0 = unlimited
         printPerPage: 4,
         cards: [], // [{ id: 1, code: 'No.001', grid: [...] }]
+        voidCardIds: [], // [83, 84, ...] unissued/voided card IDs excluded from all calculations
         drawnNumbers: [],
         sortMode: 'order', // 'order' | 'num'
         spinSpeed: 1.0,
@@ -2147,6 +2270,7 @@
           cards.push(generateSingleCard(i, state.totalCards, state.maxNum, state.gridSize));
         }
         state.cards = cards;
+        state.voidCardIds = [];
         state.drawnNumbers = [];
         saveState();
         sync3DBalls();
@@ -2215,12 +2339,19 @@
         };
       }
 
+      function getVoidSet() {
+        return new Set(Array.isArray(state.voidCardIds) ? state.voidCardIds : []);
+      }
+
       function scanCardPool(drawnList) {
         const drawnSet = new Set(drawnList);
+        const voidSet = getVoidSet();
         const winners = [];
         const ready = [];
         for (let i = 0; i < state.cards.length; i++) {
-          const res = evaluateCard(state.cards[i], drawnSet, state.gridSize, state.lineThreshold);
+          const card = state.cards[i];
+          if (voidSet.has(card.id)) continue;
+          const res = evaluateCard(card, drawnSet, state.gridSize, state.lineThreshold);
           if (res.isWinner) winners.push(res);
           else if (res.isReady) ready.push(res);
         }
@@ -2230,9 +2361,11 @@
       function countWinnersWithCandidate(candidateNum) {
         const drawnSet = new Set(state.drawnNumbers);
         drawnSet.add(candidateNum);
+        const voidSet = getVoidSet();
         const lines = getAllLines(state.gridSize);
         let winCount = 0;
         for (let i = 0; i < state.cards.length; i++) {
+          if (voidSet.has(state.cards[i].id)) continue;
           const grid = state.cards[i].grid;
           let lc = 0;
           for (let li = 0; li < lines.length; li++) {
@@ -3439,7 +3572,12 @@
         document.getElementById('sortNumBtn').classList.toggle('active', state.sortMode === 'num');
 
         // Auto-Matching Board
-        document.getElementById('poolCountLabel').textContent = String(state.cards.length);
+        const voidSet = getVoidSet();
+        const voidCount = state.cards.filter(c => voidSet.has(c.id)).length;
+        const activeCount = state.cards.length - voidCount;
+        document.getElementById('poolCountLabel').textContent = voidCount > 0
+          ? `有效 ${activeCount} 張・作廢 ${voidCount} 張`
+          : `有效 ${activeCount} 張`;
         document.getElementById('winnerCountBadge').textContent = `${winCount} 張`;
         document.getElementById('readyCountBadge').textContent = `${scan.ready.length} 張`;
 
@@ -3522,12 +3660,17 @@
         res.completedLines.forEach(line => line.forEach(idx => lineCellSet.add(idx)));
         const missingSet = new Set(res.missingNumbers);
 
-        document.getElementById('verifyModalTitle').textContent = `🔍 驗卡對獎：${card.code}`;
-        const statusBadge = res.isWinner
+        const isVoid = getVoidSet().has(card.id);
+        document.getElementById('verifyModalTitle').textContent = isVoid
+          ? `🚫 驗卡結果：${card.code}（已作廢廢牌）`
+          : `🔍 驗卡對獎：${card.code}`;
+        const statusBadge = isVoid
+          ? `<div class="void-banner">🚫 此卡（${card.code}）已設定為「未發出作廢廢牌」，系統已直接排除，不計入本次中獎資格！</div>`
+          : (res.isWinner
           ? `<span style="color:#4ade80;font-weight:900;">🎉 恭喜達標中獎！（已連成 ${res.lineCount} 條線 / 門檻 ${state.lineThreshold} 條）</span>`
           : (res.isReady
             ? `<span style="color:#fb923c;font-weight:900;">🔥 聽牌中！（已連成 ${res.lineCount} 條線，差號碼：${res.missingNumbers.join('、')}）</span>`
-            : `<span style="color:var(--text-muted);">目前連成 ${res.lineCount} 條線（達標門檻 ${state.lineThreshold} 條）</span>`);
+            : `<span style="color:var(--text-muted);">目前連成 ${res.lineCount} 條線（達標門檻 ${state.lineThreshold} 條）</span>`));
         document.getElementById('verifyModalSummary').innerHTML = statusBadge;
 
         const matrixEl = document.getElementById('verifyMatrix');
@@ -4105,6 +4248,119 @@
           state.voiceVol = parseFloat(e.target.value);
           document.getElementById('setVoiceVolVal').textContent = Math.round(state.voiceVol * 100) + '%';
           saveState();
+        });
+
+        // Void Cards Manager Modal Logic
+        function parseIdList(str) {
+          const ids = new Set();
+          const parts = String(str || '').split(/[,，、\s]+/).filter(Boolean);
+          for (const part of parts) {
+            const rangeMatch = part.match(/^(\d+)\s*[-~～至]\s*(\d+)$/);
+            if (rangeMatch) {
+              const a = Math.min(parseInt(rangeMatch[1], 10), parseInt(rangeMatch[2], 10));
+              const b = Math.max(parseInt(rangeMatch[1], 10), parseInt(rangeMatch[2], 10));
+              for (let k = a; k <= b; k++) {
+                if (k >= 1 && k <= state.cards.length) ids.add(k);
+              }
+            } else {
+              const cleaned = part.replace(/[^0-9]/g, '');
+              const num = parseInt(cleaned, 10);
+              if (num >= 1 && num <= state.cards.length) ids.add(num);
+            }
+          }
+          return Array.from(ids);
+        }
+
+        function renderVoidModalGrid() {
+          const voidSet = getVoidSet();
+          const voidCount = state.cards.filter(c => voidSet.has(c.id)).length;
+          const activeCount = state.cards.length - voidCount;
+          document.getElementById('voidStatsLabel').textContent =
+            `有效參賽卡：${activeCount} 張｜已作廢廢牌：${voidCount} 張（總計 ${state.cards.length} 張）`;
+
+          const gridEl = document.getElementById('voidCardGrid');
+          gridEl.innerHTML = state.cards.map(c => {
+            const isV = voidSet.has(c.id);
+            return `<button type="button" class="void-card-btn ${isV ? 'is-void' : ''}" data-void-toggle="${c.id}">${c.code}</button>`;
+          }).join('');
+        }
+
+        function openVoidManager() {
+          renderVoidModalGrid();
+          openModal('modalVoidCards');
+        }
+
+        document.getElementById('btnOpenVoidModal').addEventListener('click', openVoidManager);
+        document.getElementById('btnOpenVoidModalTab2').addEventListener('click', openVoidManager);
+
+        document.getElementById('voidCardGrid').addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-void-toggle]');
+          if (!btn) return;
+          const id = parseInt(btn.dataset.voidToggle, 10);
+          const voidSet = getVoidSet();
+          if (voidSet.has(id)) voidSet.delete(id);
+          else voidSet.add(id);
+          state.voidCardIds = Array.from(voidSet).sort((a, b) => a - b);
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+        });
+
+        document.getElementById('btnApplyVoidCutoff').addEventListener('click', () => {
+          const cutoff = parseInt(document.getElementById('voidCutoffInput').value, 10);
+          if (isNaN(cutoff) || cutoff < 0 || cutoff > state.cards.length) {
+            showToast(`請輸入有效卡號（0 ~ ${state.cards.length}）`);
+            return;
+          }
+          const voidIds = [];
+          for (let i = cutoff + 1; i <= state.cards.length; i++) {
+            voidIds.push(i);
+          }
+          state.voidCardIds = voidIds;
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+          showToast(`已設定 1–${cutoff} 號有效，後方 ${voidIds.length} 張未發出卡片全數作廢排除`);
+        });
+
+        document.getElementById('btnAddVoidRange').addEventListener('click', () => {
+          const ids = parseIdList(document.getElementById('voidRangeInput').value);
+          if (ids.length === 0) {
+            showToast('請輸入有效的卡號或區間（例如 5, 12, 83-100）');
+            return;
+          }
+          const voidSet = getVoidSet();
+          ids.forEach(id => voidSet.add(id));
+          state.voidCardIds = Array.from(voidSet).sort((a, b) => a - b);
+          document.getElementById('voidRangeInput').value = '';
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+          showToast(`已將 ${ids.length} 張卡片加入作廢排除`);
+        });
+
+        document.getElementById('btnRestoreVoidRange').addEventListener('click', () => {
+          const ids = parseIdList(document.getElementById('voidRangeInput').value);
+          if (ids.length === 0) {
+            showToast('請輸入欲恢復的卡號或區間');
+            return;
+          }
+          const voidSet = getVoidSet();
+          ids.forEach(id => voidSet.delete(id));
+          state.voidCardIds = Array.from(voidSet).sort((a, b) => a - b);
+          document.getElementById('voidRangeInput').value = '';
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+          showToast(`已將 ${ids.length} 張卡片恢復為有效參賽卡`);
+        });
+
+        document.getElementById('btnClearAllVoid').addEventListener('click', () => {
+          state.voidCardIds = [];
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+          showToast('已將全部卡片恢復為有效狀態');
         });
 
         // Modal Close Buttons & Backdrop Click
