@@ -1471,6 +1471,107 @@
       font-weight: 700;
     }
 
+    /* Persistent Floating Draggable & Hideable Live Sync QR Widget (Bottom-Right) */
+    .sync-qr-float {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 48;
+      width: 232px;
+      background: rgba(18, 5, 9, 0.92);
+      border: 2px solid rgba(251, 191, 36, 0.72);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.72), 0 0 24px rgba(245, 158, 11, 0.28);
+      color: var(--text-main);
+      overflow: hidden;
+      touch-action: none;
+      transition: width 0.2s ease;
+    }
+
+    body.theme-blue .sync-qr-float {
+      background: rgba(7, 17, 38, 0.94);
+    }
+
+    .sync-qr-float.large {
+      width: 300px;
+    }
+
+    .sync-qr-float.hidden {
+      display: none !important;
+    }
+
+    .sync-qr-float-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      padding: 7px 9px;
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.28) 0%, rgba(0, 0, 0, 0.4) 100%);
+      border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+      cursor: grab;
+    }
+
+    .sync-qr-float-header:active {
+      cursor: grabbing;
+    }
+
+    .sync-qr-float-title {
+      font-size: 11.5px;
+      font-weight: 900;
+      color: var(--gold-light);
+      white-space: nowrap;
+    }
+
+    .sync-qr-float-body {
+      padding: 10px 10px 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      text-align: center;
+    }
+
+    .sync-qr-float-box {
+      width: 172px;
+      height: 172px;
+      background: #ffffff;
+      padding: 7px;
+      border-radius: 10px;
+      border: 2px solid var(--gold-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: width 0.2s ease, height 0.2s ease;
+    }
+
+    .sync-qr-float.large .sync-qr-float-box {
+      width: 256px;
+      height: 256px;
+    }
+
+    .sync-qr-float-box svg,
+    .sync-qr-float-box img,
+    .sync-qr-float-box canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    .sync-qr-float-meta {
+      font-size: 11px;
+      font-weight: 800;
+      color: #fef3c7;
+      line-height: 1.35;
+    }
+
+    .sync-qr-float-actions {
+      display: flex;
+      gap: 5px;
+      width: 100%;
+      justify-content: center;
+    }
+
     /* Big Screen QR Share Modal */
     .qr-display-box {
       width: 240px;
@@ -1736,7 +1837,8 @@
     body.mobile-mode-active .top-bar,
     body.mobile-mode-active #viewStage,
     body.mobile-mode-active #viewCards,
-    body.mobile-mode-active #gameGuidePanel {
+    body.mobile-mode-active #gameGuidePanel,
+    body.mobile-mode-active #syncQrFloatPanel {
       display: none !important;
     }
 
@@ -1895,6 +1997,7 @@
       .preview-toolbar,
       .modal-backdrop,
       .guide-float,
+      .sync-qr-float,
       #viewMobile,
       #toastBox {
         display: none !important;
@@ -2037,7 +2140,7 @@
       <div class="stage-controls">
         <button id="btnDraw" class="draw-btn" type="button">🌪️ 氣旋抽獎 (Space)</button>
         <button id="btnBgmQuick" class="sub-ctrl-btn" type="button">🎵 背景音樂：關</button>
-        <button id="btnShowSyncQr" class="sub-ctrl-btn" type="button" title="顯示大螢幕 QR Code 讓員工手機掃碼對獎與快速兌獎">📲 手機兌獎 QR</button>
+        <button id="btnShowSyncQr" class="sub-ctrl-btn" type="button" title="顯示或隱藏右下角全員掃碼同步 QR 浮動區塊">📲 全員同步 QR：開</button>
         <button id="btnResetDraw" class="sub-ctrl-btn" type="button">🔄 重置本局開獎</button>
       </div>
     </section>
@@ -2536,6 +2639,29 @@
     </div>
   </div>
 
+  <!-- ================= FLOATING DRAGGABLE & HIDEABLE LIVE SYNC QR (BOTTOM-RIGHT) ================= -->
+  <aside id="syncQrFloatPanel" class="sync-qr-float" aria-label="全員工即時同步對獎 QR">
+    <div class="sync-qr-float-header" id="syncQrDragHandle" title="按住拖曳可自由移動至畫面任意位置">
+      <span class="sync-qr-float-title">⠿ 📲 全員同步對獎 QR</span>
+      <div class="guide-header-btns">
+        <button type="button" class="guide-mini-btn" id="btnZoomSyncQr" title="放大或縮小 QR Code">🔍</button>
+        <button type="button" class="guide-mini-btn" id="btnResetSyncQrPos" title="重置回右下角">↺</button>
+        <button type="button" class="guide-mini-btn" id="btnHideSyncQr" title="隱藏浮動 QR">✕</button>
+      </div>
+    </div>
+    <div class="sync-qr-float-body">
+      <div class="sync-qr-float-box" id="syncQrFloatBox"></div>
+      <div class="sync-qr-float-meta" id="syncQrFloatMeta">
+        員工掃碼自動對號連線<br/>
+        <span style="color:var(--gold-light)">已同步最新 0 球</span>
+      </div>
+      <div class="sync-qr-float-actions">
+        <button type="button" class="guide-mini-btn" id="btnFloatOpenModal">🔗 連結</button>
+        <button type="button" class="guide-mini-btn" id="btnFloatPreviewMobile">📱 預覽手機</button>
+      </div>
+    </div>
+  </aside>
+
   <div id="toastBox"></div>
 
   <script>
@@ -2571,7 +2697,10 @@
         voiceVol: 0.9,
         trackPos: null, // { left, top }
         guideVisible: true,
-        guidePos: null // { left, top }
+        guidePos: null, // { left, top }
+        syncQrVisible: true,
+        syncQrLarge: false,
+        syncQrPos: null // { left, top }
       };
 
       let state = loadState();
@@ -3899,6 +4028,7 @@
         renderPrintCards();
         restoreTrackPosition();
         restoreGuideState();
+        restoreSyncQrState();
         updateAudioUi();
       }
 
@@ -3995,6 +4125,7 @@
           : `有效 ${activeCount} 張`;
         document.getElementById('winnerCountBadge').textContent = `${winCount} 張`;
         document.getElementById('readyCountBadge').textContent = `${scan.ready.length} 張`;
+        updateFloatingSyncQr();
 
         const winnerList = document.getElementById('winnerList');
         if (winCount === 0) {
@@ -4859,7 +4990,7 @@
         // Offline fallback visual badge if CDN is unreachable
         const cardMatch = text.match(/[?&]c=(\d+)/) || text.match(/BINGO-CARD:(\d+)/);
         const label = cardMatch ? ('No.' + String(cardMatch[1]).padStart(3, '0')) : 'QR';
-        el.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #111827;font-family:monospace;font-size:10px;font-weight:900;color:#111827;text-align:center;line-height:1.1;"><span>QR</span><span>${label}</span></div>`;
+        el.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed #4b5563;border-radius:6px;padding:6px;font-size:11px;font-weight:800;color:#111827;text-align:center;line-height:1.35;"><span>${label === 'QR' ? '📲 連網 / GitHub Pages' : label}</span><span style="font-size:10px;color:#4b5563;margin-top:2px;">${label === 'QR' ? '自動生成可掃描 QR' : '離線編號碼'}</span></div>`;
       }
 
       function encodeNumbersB64(nums) {
@@ -5213,20 +5344,122 @@
         }
       }
 
+      function updateFloatingSyncQr() {
+        const box = document.getElementById('syncQrFloatBox');
+        const meta = document.getElementById('syncQrFloatMeta');
+        if (!box || !meta) return;
+        const url = buildStageSyncUrl();
+        const cnt = state.drawnNumbers.length;
+        const latest = cnt > 0 ? `（最新 ${state.drawnNumbers[cnt - 1]} 號）` : '';
+        meta.innerHTML = `員工掃碼自動對號連線<br/><span style="color:var(--gold-light)">已同步最新 ${cnt} 球${latest}</span>`;
+        renderQrIntoElement(box, url);
+      }
+
+      function setSyncQrVisibility(visible) {
+        state.syncQrVisible = visible;
+        const panel = document.getElementById('syncQrFloatPanel');
+        const btn = document.getElementById('btnShowSyncQr');
+        if (panel) panel.classList.toggle('hidden', !visible);
+        if (btn) btn.textContent = visible ? '📲 全員同步 QR：開' : '📲 全員同步 QR：關';
+        if (visible) updateFloatingSyncQr();
+        saveState();
+      }
+
+      function initDraggableSyncQr() {
+        const panel = document.getElementById('syncQrFloatPanel');
+        const handle = document.getElementById('syncQrDragHandle');
+        let dragging = false;
+        let offsetX = 0, offsetY = 0;
+
+        handle.addEventListener('pointerdown', (e) => {
+          if (e.target.closest('button')) return;
+          dragging = true;
+          handle.setPointerCapture(e.pointerId);
+          const rect = panel.getBoundingClientRect();
+          offsetX = e.clientX - rect.left;
+          offsetY = e.clientY - rect.top;
+        });
+
+        handle.addEventListener('pointermove', (e) => {
+          if (!dragging) return;
+          let left = e.clientX - offsetX;
+          let top = e.clientY - offsetY;
+          left = Math.max(8, Math.min(window.innerWidth - panel.offsetWidth - 8, left));
+          top = Math.max(8, Math.min(window.innerHeight - panel.offsetHeight - 8, top));
+          panel.style.left = left + 'px';
+          panel.style.top = top + 'px';
+          panel.style.right = 'auto';
+          panel.style.bottom = 'auto';
+        });
+
+        handle.addEventListener('pointerup', (e) => {
+          if (!dragging) return;
+          dragging = false;
+          handle.releasePointerCapture(e.pointerId);
+          state.syncQrPos = { left: panel.style.left, top: panel.style.top };
+          saveState();
+        });
+
+        document.getElementById('btnResetSyncQrPos').addEventListener('click', () => {
+          state.syncQrPos = null;
+          panel.style.left = 'auto';
+          panel.style.top = 'auto';
+          panel.style.right = '18px';
+          panel.style.bottom = '18px';
+          saveState();
+          showToast('全員同步 QR 已重置回右下角');
+        });
+
+        document.getElementById('btnZoomSyncQr').addEventListener('click', () => {
+          state.syncQrLarge = !state.syncQrLarge;
+          panel.classList.toggle('large', state.syncQrLarge);
+          saveState();
+        });
+
+        document.getElementById('btnHideSyncQr').addEventListener('click', () => {
+          setSyncQrVisibility(false);
+        });
+      }
+
+      function restoreSyncQrState() {
+        const panel = document.getElementById('syncQrFloatPanel');
+        const btn = document.getElementById('btnShowSyncQr');
+        const visible = state.syncQrVisible !== false;
+        panel.classList.toggle('hidden', !visible);
+        panel.classList.toggle('large', Boolean(state.syncQrLarge));
+        if (btn) btn.textContent = visible ? '📲 全員同步 QR：開' : '📲 全員同步 QR：關';
+        if (state.syncQrPos && state.syncQrPos.left && state.syncQrPos.top) {
+          panel.style.left = state.syncQrPos.left;
+          panel.style.top = state.syncQrPos.top;
+          panel.style.right = 'auto';
+          panel.style.bottom = 'auto';
+        }
+        updateFloatingSyncQr();
+      }
+
+      function openSyncQrModal() {
+        const url = buildStageSyncUrl();
+        document.getElementById('syncQrDrawnCount').textContent = String(state.drawnNumbers.length);
+        document.getElementById('syncQrUrlHint').textContent = url;
+        const box = document.getElementById('syncQrCanvasBox');
+        if (typeof window.qrcode === 'function') {
+          renderQrIntoElement(box, url);
+        } else {
+          renderQrIntoElement(box, url);
+          loadQrLibrary(() => renderQrIntoElement(box, url));
+        }
+        openModal('modalSyncQr');
+      }
+
       function bindMobileAndQrEvents() {
-        // Big screen Sync QR modal
+        // Toggle persistent floating Sync QR widget directly (no need to keep opening/closing modal)
         document.getElementById('btnShowSyncQr').addEventListener('click', () => {
-          const url = buildStageSyncUrl();
-          document.getElementById('syncQrDrawnCount').textContent = String(state.drawnNumbers.length);
-          document.getElementById('syncQrUrlHint').textContent = url;
-          const box = document.getElementById('syncQrCanvasBox');
-          if (typeof window.qrcode === 'function') {
-            renderQrIntoElement(box, url);
-          } else {
-            renderQrIntoElement(box, url);
-            loadQrLibrary(() => renderQrIntoElement(box, url));
-          }
-          openModal('modalSyncQr');
+          setSyncQrVisibility(!state.syncQrVisible);
+        });
+
+        document.getElementById('btnFloatOpenModal').addEventListener('click', openSyncQrModal);
+        document.getElementById('btnFloatPreviewMobile').addEventListener('click', () => {
+          document.getElementById('btnPreviewMobile').click();
         });
 
         document.getElementById('btnCopySyncUrl').addEventListener('click', () => {
@@ -5332,8 +5565,10 @@
         bindMobileAndQrEvents();
         initDraggableTrack();
         initDraggableGuide();
+        initDraggableSyncQr();
         loadQrLibrary(() => {
           renderAllPrintCardQrs();
+          updateFloatingSyncQr();
         });
         renderAll();
         checkUrlParamsForMobileMode();
