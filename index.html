@@ -2683,6 +2683,7 @@
         lineThreshold: 3,
         maxWinners: 5, // 0 = unlimited
         printPerPage: 4,
+        poolSeed: 202701, // Deterministic seed so employee phones reconstruct the EXACT same card by card ID!
         cards: [], // [{ id: 1, code: 'No.001', grid: [...] }]
         voidCardIds: [], // [83, 84, ...] unissued/voided card IDs excluded from all calculations
         drawnNumbers: [],
@@ -2753,11 +2754,37 @@
         return 'No.' + String(n).padStart(digits, '0');
       }
 
-      function generateSingleCard(id, totalCards, maxNum, gridSize) {
+      // Deterministic Mulberry32 PRNG so any phone with (poolSeed, cardId, maxNum, gridSize) reconstructs the EXACT same card!
+      function createSeededRng(seed) {
+        let a = (seed >>> 0) || 1;
+        return function () {
+          a |= 0;
+          a = (a + 0x6D2B79F5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function shuffleArray(arr, rng) {
+        const nextRand = rng || Math.random;
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(nextRand() * (i + 1));
+          const tmp = arr[i];
+          arr[i] = arr[j];
+          arr[j] = tmp;
+        }
+        return arr;
+      }
+
+      function generateSingleCard(id, totalCards, maxNum, gridSize, poolSeed) {
         const totalCells = gridSize * gridSize;
         const hasFree = (gridSize === 5);
         const centerIdx = Math.floor(totalCells / 2);
         const grid = new Array(totalCells).fill(null);
+        // Derive a unique deterministic seed per card ID from poolSeed
+        const cardSeed = (((poolSeed || 202701) * 2654435761) ^ (id * 374761393) ^ (maxNum * 668265263) ^ (gridSize * 1274126177)) >>> 0;
+        const rng = createSeededRng(cardSeed);
 
         // Classic B-I-N-G-O column ranges when 5x5 and maxNum === 75
         if (gridSize === 5 && maxNum === 75) {
@@ -2766,7 +2793,7 @@
             const max = (col + 1) * 15;
             const pool = [];
             for (let v = min; v <= max; v++) pool.push(v);
-            shuffleArray(pool);
+            shuffleArray(pool, rng);
             for (let row = 0; row < 5; row++) {
               const idx = row * 5 + col;
               grid[idx] = (hasFree && idx === centerIdx) ? 'FREE' : pool[row];
@@ -2775,7 +2802,7 @@
         } else {
           const pool = [];
           for (let v = 1; v <= maxNum; v++) pool.push(v);
-          shuffleArray(pool);
+          shuffleArray(pool, rng);
           let p = 0;
           for (let i = 0; i < totalCells; i++) {
             if (hasFree && i === centerIdx) {
@@ -2794,24 +2821,16 @@
         };
       }
 
-      function shuffleArray(arr) {
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          const tmp = arr[i];
-          arr[i] = arr[j];
-          arr[j] = tmp;
-        }
-        return arr;
-      }
-
       function generateCardPool(silent) {
         const minNeeded = state.gridSize === 5 ? 24 : 9;
         if (state.maxNum < minNeeded) {
           state.maxNum = minNeeded;
         }
+        // Generate a new 6-digit poolSeed whenever a new pool is generated
+        state.poolSeed = Math.floor(100000 + Math.random() * 899999);
         const cards = [];
         for (let i = 1; i <= state.totalCards; i++) {
-          cards.push(generateSingleCard(i, state.totalCards, state.maxNum, state.gridSize));
+          cards.push(generateSingleCard(i, state.totalCards, state.maxNum, state.gridSize, state.poolSeed));
         }
         state.cards = cards;
         state.voidCardIds = [];
@@ -2820,7 +2839,7 @@
         sync3DBalls();
         renderAll();
         if (!silent) {
-          showToast(`已生成 ${state.totalCards} 張新紙卡（1–${state.maxNum}，${state.gridSize}×${state.gridSize}）`);
+          showToast(`已生成 ${state.totalCards} 張新紙卡（1–${state.maxNum}，${state.gridSize}×${state.gridSize}，卡池碼 #${state.poolSeed}）`);
         }
       }
 
@@ -4946,6 +4965,9 @@
       const MOBILE_STORAGE_KEY = 'cyclone_bingo_mobile_card_v1';
       let mobileState = {
         cardId: null,
+        poolSeed: null,
+        maxNum: 75,
+        totalCards: 100,
         gridSize: 5,
         lineThreshold: 3,
         grid: [],
@@ -5033,7 +5055,8 @@
       function buildStageSyncUrl() {
         const drawnEnc = encodeNumbersB64(state.drawnNumbers);
         const titleEnc = encodeURIComponent(state.eventTitle.slice(0, 28));
-        return `${getBaseShareUrl()}?m=sync&s=${drawnEnc}&t=${state.lineThreshold}&g=${state.gridSize}&n=${titleEnc}`;
+        const seed = state.poolSeed || 202701;
+        return `${getBaseShareUrl()}?m=sync&s=${drawnEnc}&p=${seed}&r=${state.maxNum}&tc=${state.totalCards}&t=${state.lineThreshold}&g=${state.gridSize}&n=${titleEnc}`;
       }
 
       function renderAllPrintCardQrs() {
@@ -5163,7 +5186,8 @@
           winBtn.style.display = 'none';
         } else {
           statusEl.className = 'mobile-status-bar';
-          statusEl.textContent = `目前連成 ${evalRes.lineCount} 條線（達標門檻 ${threshold} 條｜已對中 ${markedSet.size} 球）`;
+          const cardHits = mobileState.grid.filter(v => v !== 'FREE' && markedSet.has(v)).length;
+          statusEl.textContent = `目前連成 ${evalRes.lineCount} 條線（門檻 ${threshold} 條｜本卡命中 ${cardHits} 格）`;
           winBtn.style.display = 'none';
         }
 
@@ -5227,6 +5251,23 @@
           const sParam = params.get('s');
           if (sParam !== null) {
             mobileState.syncedDrawn = decodeNumbersB64(sParam).filter(v => typeof v === 'number');
+          }
+          const pParam = parseInt(params.get('p'), 10);
+          const rParam = parseInt(params.get('r'), 10);
+          const tcParam = parseInt(params.get('tc'), 10);
+          if (!isNaN(pParam) && pParam > 0) mobileState.poolSeed = pParam;
+          if (!isNaN(rParam) && rParam >= 9) mobileState.maxNum = rParam;
+          if (!isNaN(tcParam) && tcParam >= 1) mobileState.totalCards = tcParam;
+          // Auto-reconstruct exact card grid from host's poolSeed if employee already bound a cardId!
+          if (mobileState.cardId && mobileState.poolSeed) {
+            const rebuilt = generateSingleCard(
+              mobileState.cardId,
+              mobileState.totalCards || 100,
+              mobileState.maxNum || 75,
+              mobileState.gridSize || 5,
+              mobileState.poolSeed
+            );
+            mobileState.grid = rebuilt.grid;
           }
           saveMobileState();
           enterMobileMode();
@@ -5294,6 +5335,23 @@
                       mobileState.syncedDrawn = decodeNumbersB64(p.get('s')).filter(v => typeof v === 'number');
                       const tVal = parseInt(p.get('t'), 10);
                       if (tVal >= 1 && tVal <= 12) mobileState.lineThreshold = tVal;
+                      const gVal = parseInt(p.get('g'), 10);
+                      if (gVal === 3 || gVal === 5) mobileState.gridSize = gVal;
+                      const pVal = parseInt(p.get('p'), 10);
+                      if (!isNaN(pVal) && pVal > 0) mobileState.poolSeed = pVal;
+                      const rVal = parseInt(p.get('r'), 10);
+                      if (!isNaN(rVal) && rVal >= 9) mobileState.maxNum = rVal;
+                      const tcVal = parseInt(p.get('tc'), 10);
+                      if (!isNaN(tcVal) && tcVal >= 1) mobileState.totalCards = tcVal;
+                      if (mobileState.cardId && mobileState.poolSeed) {
+                        mobileState.grid = generateSingleCard(
+                          mobileState.cardId,
+                          mobileState.totalCards || 100,
+                          mobileState.maxNum || 75,
+                          mobileState.gridSize || 5,
+                          mobileState.poolSeed
+                        ).grid;
+                      }
                       saveMobileState();
                       renderMobileView();
                       showToast(`已同步大螢幕最新開獎（共 ${mobileState.syncedDrawn.length} 球）`);
@@ -5484,6 +5542,9 @@
           closeModal('modalSyncQr');
           mobileState = loadMobileState();
           mobileState.eventTitle = state.eventTitle;
+          mobileState.poolSeed = state.poolSeed || 202701;
+          mobileState.maxNum = state.maxNum;
+          mobileState.totalCards = state.totalCards;
           mobileState.gridSize = state.gridSize;
           mobileState.lineThreshold = state.lineThreshold;
           mobileState.syncedDrawn = [...state.drawnNumbers];
@@ -5507,18 +5568,28 @@
             return;
           }
           mobileState.cardId = id;
-          // If same browser has full card pool, auto-load grid too
-          const localMatch = state.cards.find(c => c.id === id);
-          if (localMatch) {
-            mobileState.grid = [...localMatch.grid];
-            mobileState.gridSize = state.gridSize;
-            mobileState.lineThreshold = state.lineThreshold;
+          if (mobileState.poolSeed) {
+            // Reconstruct the EXACT same card as the host PC using the synced poolSeed!
+            mobileState.grid = generateSingleCard(
+              id,
+              mobileState.totalCards || 100,
+              mobileState.maxNum || 75,
+              mobileState.gridSize || 5,
+              mobileState.poolSeed
+            ).grid;
           } else {
-            mobileState.grid = [];
+            const localMatch = state.cards.find(c => c.id === id);
+            if (localMatch) {
+              mobileState.grid = [...localMatch.grid];
+              mobileState.gridSize = state.gridSize;
+              mobileState.lineThreshold = state.lineThreshold;
+            } else {
+              mobileState.grid = [];
+            }
           }
           saveMobileState();
           renderMobileView();
-          showToast(`已綁定卡號 No.${String(id).padStart(3, '0')}`);
+          showToast(`已同步綁定卡號 No.${String(id).padStart(3, '0')}`);
         });
 
         document.getElementById('mobileCardGrid').addEventListener('click', (e) => {
