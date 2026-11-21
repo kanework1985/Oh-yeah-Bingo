@@ -1,0 +1,5113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D 氣旋賓果抽獎、紙卡批量列印與自動對獎系統</title>
+  <style>
+    :root {
+      --bg-deep: #140306;
+      --bg-mid: #32070f;
+      --bg-glow: #5c0c1b;
+      --panel-bg: rgba(24, 5, 10, 0.82);
+      --panel-border: rgba(251, 191, 36, 0.32);
+      --gold-light: #fef08a;
+      --gold-main: #f59e0b;
+      --gold-dark: #b45309;
+      --accent: #ef4444;
+      --accent-soft: rgba(239, 68, 68, 0.22);
+      --text-main: #fffbeb;
+      --text-muted: #d6c3a5;
+      --success: #22c55e;
+      --warning: #f97316;
+      --danger: #ef4444;
+      --shadow-gold: 0 0 24px rgba(245, 158, 11, 0.35);
+    }
+
+    body.theme-blue {
+      --bg-deep: #030816;
+      --bg-mid: #0b1c3d;
+      --bg-glow: #13326b;
+      --panel-bg: rgba(7, 17, 38, 0.84);
+      --panel-border: rgba(251, 191, 36, 0.34);
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.2);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      background: radial-gradient(circle at 35% 45%, var(--bg-glow) 0%, var(--bg-mid) 42%, var(--bg-deep) 100%);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    body.tab-cards-active {
+      overflow-y: auto;
+      overflow-x: hidden;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    /* Decorative subtle stage grid */
+    .stage-bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(rgba(251, 191, 36, 0.08) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(251, 191, 36, 0.05) 0%, transparent 28%, transparent 75%, rgba(0, 0, 0, 0.5) 100%);
+      background-size: 36px 36px, 100% 100%;
+      z-index: 0;
+    }
+
+    /* ================= TOP HEADER ================= */
+    .top-bar {
+      position: relative;
+      z-index: 20;
+      height: 76px;
+      padding: 0 14px;
+      display: grid;
+      grid-template-columns: auto minmax(180px, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.28) 100%);
+      border-bottom: 1px solid var(--panel-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+    }
+
+    .nav-right {
+      justify-content: flex-end;
+    }
+
+    .tab-btn, .icon-btn {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      padding: 6px 9px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover, .icon-btn:hover {
+      background: rgba(251, 191, 36, 0.18);
+      border-color: var(--gold-main);
+      transform: translateY(-1px);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+      color: #1c0a00;
+      border-color: var(--gold-light);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.45);
+    }
+
+    .engine-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      background: rgba(0, 0, 0, 0.45);
+      color: var(--gold-light);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .engine-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    /* Editable Main Event Title */
+    .title-wrap {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    #eventTitle {
+      font-size: clamp(16px, 1.85vw, 32px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(180deg, #fffbeb 0%, #fde047 45%, #f59e0b 85%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 10px rgba(245, 158, 11, 0.55));
+      padding: 2px 14px;
+      border-radius: 10px;
+      border: 1px dashed transparent;
+      outline: none;
+      cursor: text;
+      user-select: text;
+      transition: border-color 0.2s, background 0.2s;
+      max-width: 52vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #eventTitle:hover {
+      border-color: rgba(251, 191, 36, 0.45);
+    }
+
+    #eventTitle:focus {
+      -webkit-text-fill-color: #fffbeb;
+      background: rgba(0, 0, 0, 0.65);
+      border-color: var(--gold-light);
+      white-space: normal;
+    }
+
+    .title-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.72;
+      margin-top: 1px;
+    }
+
+    /* ================= TAB 1: LOTTERY STAGE ================= */
+    #viewStage {
+      position: relative;
+      z-index: 10;
+      width: 100vw;
+      height: calc(100vh - 78px);
+      display: grid;
+      grid-template-columns: 65% 35%;
+      overflow: hidden;
+    }
+
+    #viewStage.hidden, #viewCards.hidden {
+      display: none !important;
+    }
+
+    /* Left 65% 3D Stage */
+    .stage-left {
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-right: 1px solid var(--panel-border);
+    }
+
+    #stage3DContainer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    #stage3DContainer canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Top HUD inside Stage Left */
+    .stage-hud-top {
+      position: relative;
+      z-index: 5;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+
+    .hud-pill-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      pointer-events: auto;
+    }
+
+    .hud-pill {
+      background: rgba(0, 0, 0, 0.58);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 8px 14px;
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      min-width: 104px;
+    }
+
+    .hud-pill-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .hud-pill-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--gold-light);
+      line-height: 1.2;
+    }
+
+    .hud-pill.quota-warn {
+      border-color: #f97316;
+      background: rgba(154, 52, 18, 0.55);
+      animation: pulseBorder 1.5s infinite;
+    }
+
+    .hud-pill.quota-full {
+      border-color: #ef4444;
+      background: rgba(127, 29, 29, 0.72);
+    }
+
+    @keyframes pulseBorder {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.55); }
+      50% { box-shadow: 0 0 18px 4px rgba(249, 115, 22, 0.75); }
+    }
+
+    /* Centerpiece Hero Ball Reveal Overlay */
+    .hero-reveal {
+      position: absolute;
+      inset: 0;
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.4);
+      transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .hero-reveal.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .hero-rays {
+      position: absolute;
+      width: 460px;
+      height: 460px;
+      border-radius: 50%;
+      background: repeating-conic-gradient(
+        from 0deg,
+        rgba(254, 240, 138, 0.28) 0deg 10deg,
+        transparent 10deg 22.5deg
+      );
+      animation: spinSlow 10s linear infinite;
+      filter: blur(2px);
+    }
+
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .hero-ball {
+      position: relative;
+      width: 230px;
+      height: 230px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 28%, #fffbeb 0%, #fde047 26%, #f59e0b 62%, #92400e 100%);
+      box-shadow:
+        0 0 45px rgba(251, 191, 36, 0.9),
+        0 0 110px rgba(245, 158, 11, 0.55),
+        inset -16px -18px 34px rgba(120, 53, 15, 0.65),
+        inset 10px 10px 24px rgba(255, 255, 255, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-ball-inner {
+      width: 146px;
+      height: 146px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fef9c3 85%, #fde68a 100%);
+      box-shadow: inset 0 4px 10px rgba(0,0,0,0.22), 0 2px 10px rgba(255,255,255,0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #450a0a;
+    }
+
+    .hero-ball-letter {
+      font-size: 22px;
+      font-weight: 900;
+      color: #b45309;
+      letter-spacing: 3px;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .hero-ball-num {
+      font-size: 82px;
+      font-weight: 900;
+      line-height: 0.95;
+      color: #7f1d1d;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.8);
+    }
+
+    .hero-caption {
+      position: relative;
+      margin-top: 18px;
+      padding: 6px 22px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.78);
+      border: 1px solid var(--gold-light);
+      color: var(--gold-light);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+
+    /* Draggable Latest Drawn Display Track */
+    .latest-track {
+      position: absolute;
+      left: 24px;
+      bottom: 98px;
+      z-index: 15;
+      background: rgba(12, 4, 8, 0.82);
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      border-radius: 18px;
+      padding: 8px 14px 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12);
+      min-width: 310px;
+      max-width: 580px;
+      touch-action: none;
+    }
+
+    .track-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+      cursor: grab;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    .track-header:active {
+      cursor: grabbing;
+    }
+
+    .track-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .track-reset-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .track-reset-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--gold-light);
+    }
+
+    .track-rail {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 4px 8px;
+      border-radius: 26px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.45) 55%, rgba(251,191,36,0.15) 100%);
+      border: 1px solid rgba(255,255,255,0.14);
+      overflow-x: auto;
+    }
+
+    .track-empty {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 0 8px;
+    }
+
+    .track-ball {
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 15px;
+      color: #1f0a0a;
+      background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e2e8f0 55%, #94a3b8 100%);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.5), inset -3px -3px 6px rgba(0,0,0,0.25);
+      transition: transform 0.25s ease;
+    }
+
+    .track-ball.newest {
+      width: 46px;
+      height: 46px;
+      font-size: 18px;
+      color: #450a0a;
+      background: radial-gradient(circle at 30% 30%, #fffbeb 0%, #fde047 45%, #f59e0b 90%);
+      box-shadow: 0 0 18px rgba(251, 191, 36, 0.85), inset -3px -3px 8px rgba(146, 64, 14, 0.45);
+      animation: popBall 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popBall {
+      0% { transform: scale(0.2) translateX(-20px); opacity: 0; }
+      100% { transform: scale(1) translateX(0); opacity: 1; }
+    }
+
+    /* Draggable & Hideable Floating Game Guide Panel */
+    .guide-float {
+      position: fixed;
+      right: calc(35vw + 18px);
+      top: 94px;
+      z-index: 45;
+      width: 306px;
+      max-width: calc(100vw - 24px);
+      max-height: calc(100vh - 210px);
+      display: flex;
+      flex-direction: column;
+      background: rgba(18, 5, 9, 0.9);
+      border: 1.5px solid rgba(251, 191, 36, 0.58);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65), 0 0 22px rgba(245, 158, 11, 0.2);
+      color: var(--text-main);
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    body.theme-blue .guide-float {
+      background: rgba(7, 17, 38, 0.92);
+    }
+
+    .guide-float.hidden {
+      display: none !important;
+    }
+
+    .guide-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.24) 0%, rgba(0, 0, 0, 0.35) 100%);
+      border-bottom: 1px solid rgba(251, 191, 36, 0.28);
+      cursor: grab;
+      flex-shrink: 0;
+    }
+
+    .guide-header:active {
+      cursor: grabbing;
+    }
+
+    .guide-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.4px;
+    }
+
+    .guide-header-btns {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .guide-mini-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.28);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .guide-mini-btn:hover {
+      background: rgba(251, 191, 36, 0.22);
+      color: var(--gold-light);
+    }
+
+    .guide-body {
+      padding: 12px 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 12.5px;
+      line-height: 1.6;
+      user-select: text;
+    }
+
+    .guide-rule-pill {
+      background: rgba(251, 191, 36, 0.14);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold-light);
+    }
+
+    .guide-sec {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 9px 11px;
+    }
+
+    .guide-sec h4 {
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--gold-light);
+      margin-bottom: 5px;
+    }
+
+    .guide-sec ul {
+      padding-left: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      color: #fef3c7;
+    }
+
+    body.theme-blue .guide-sec ul {
+      color: #e2e8f0;
+    }
+
+    /* Bottom Action Controls inside Stage Left */
+    .stage-controls {
+      position: relative;
+      z-index: 10;
+      padding: 16px 24px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: linear-gradient(0deg, rgba(0,0,0,0.78) 0%, transparent 100%);
+    }
+
+    .draw-btn {
+      appearance: none;
+      border: 2px solid var(--gold-light);
+      background: linear-gradient(135deg, #fde047 0%, #f59e0b 48%, #b45309 100%);
+      color: #290b02;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      padding: 14px 40px;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 0 28px rgba(245, 158, 11, 0.55), 0 8px 20px rgba(0,0,0,0.5);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .draw-btn:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 0 38px rgba(254, 240, 138, 0.85), 0 10px 24px rgba(0,0,0,0.6);
+    }
+
+    .draw-btn:active:not(:disabled) {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .draw-btn:disabled {
+      opacity: 0.58;
+      cursor: not-allowed;
+      filter: grayscale(0.45);
+      box-shadow: none;
+    }
+
+    .draw-btn.locked-stop {
+      background: linear-gradient(135deg, #991b1b 0%, #450a0a 100%);
+      border-color: #fca5a5;
+      color: #fee2e2;
+      opacity: 0.92;
+    }
+
+    .sub-ctrl-btn {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      background: rgba(0, 0, 0, 0.58);
+      color: var(--text-main);
+      padding: 11px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+    }
+
+    .sub-ctrl-btn:hover {
+      border-color: var(--gold-main);
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    /* ================= RIGHT 35% MONITORING BOARD ================= */
+    .stage-right {
+      height: 100%;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      padding: 14px 16px;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .board-card {
+      background: rgba(0, 0, 0, 0.36);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 11px 13px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .board-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+
+    .board-card-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mini-toggle {
+      display: inline-flex;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
+    }
+
+    .mini-toggle button {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      cursor: pointer;
+    }
+
+    .mini-toggle button.active {
+      background: var(--gold-main);
+      color: #1c0a00;
+    }
+
+    /* Drawn History Section */
+    .drawn-section {
+      flex: 1.15;
+    }
+
+    .drawn-summary-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+
+    .latest-ball-box {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fffbeb 0%, #fde047 45%, #d97706 100%);
+      color: #450a0a;
+      font-size: 26px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.55);
+    }
+
+    .drawn-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      overflow-y: auto;
+      padding-right: 4px;
+      align-content: flex-start;
+    }
+
+    .history-ball {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #1f0a0a;
+      background: radial-gradient(circle at 32% 30%, #fff 0%, #e5e7eb 65%, #9ca3af 100%);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+
+    .history-ball.latest {
+      background: radial-gradient(circle at 30% 30%, #fffbeb 0%, #fde047 48%, #f59e0b 100%);
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.85);
+      transform: scale(1.08);
+    }
+
+    /* Auto Matching Section */
+    .match-section {
+      flex: 1.35;
+      gap: 8px;
+    }
+
+    .match-subbox {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .match-subbox.winners-box {
+      border-color: rgba(34, 197, 94, 0.45);
+      background: rgba(20, 83, 45, 0.24);
+    }
+
+    .match-subbox.ready-box {
+      border-color: rgba(249, 115, 22, 0.4);
+      background: rgba(124, 45, 18, 0.2);
+    }
+
+    .match-sub-title {
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .match-list {
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-content: flex-start;
+      padding-right: 4px;
+    }
+
+    .card-chip {
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.45);
+      color: var(--text-main);
+      padding: 4px 9px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .card-chip:hover {
+      transform: translateY(-1px);
+      border-color: var(--gold-light);
+    }
+
+    .card-chip.winner {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      border-color: #86efac;
+      color: #ffffff;
+    }
+
+    .card-chip.ready {
+      background: rgba(194, 65, 12, 0.45);
+      border-color: #fdba74;
+      color: #ffedd5;
+    }
+
+    .missing-tag {
+      background: #fbbf24;
+      color: #1c0a00;
+      padding: 1px 5px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    /* Quick Verify Section */
+    .verify-section {
+      flex-shrink: 0;
+    }
+
+    .verify-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .verify-input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .verify-input:focus {
+      border-color: var(--gold-light);
+      box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.25);
+    }
+
+    .verify-btn {
+      background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+      border: 1px solid var(--gold-light);
+      color: #1c0a00;
+      font-weight: 800;
+      padding: 0 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .verify-btn:hover {
+      filter: brightness(1.1);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(251, 191, 36, 0.35);
+      border-radius: 4px;
+    }
+
+    /* ================= TAB 2: CARDS & PRINT ================= */
+    #viewCards {
+      position: relative;
+      z-index: 10;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 24px 60px;
+    }
+
+    .cards-layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .config-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 20px;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-h2 {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .form-field input, .form-field select {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid var(--panel-border);
+      border-radius: 9px;
+      padding: 9px 11px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .form-field input:focus, .form-field select:focus {
+      border-color: var(--gold-light);
+    }
+
+    /* Smart Advisor Panel */
+    .advisor-box {
+      background: rgba(251, 191, 36, 0.09);
+      border: 1px solid rgba(251, 191, 36, 0.42);
+      border-radius: 12px;
+      padding: 13px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .advisor-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .advisor-status {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    .advisor-status.good { background: rgba(34,197,94,0.25); color: #86efac; }
+    .advisor-status.warn { background: rgba(249,115,22,0.28); color: #fdba74; }
+    .advisor-status.bad  { background: rgba(239,68,68,0.3); color: #fca5a5; }
+
+    .advisor-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #fef3c7;
+    }
+
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .preset-btn {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 9px;
+      border-radius: 8px;
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      background: rgba(0, 0, 0, 0.42);
+      color: var(--gold-light);
+      cursor: pointer;
+    }
+
+    .preset-btn:hover {
+      background: rgba(251, 191, 36, 0.22);
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 11px;
+      border: 1px solid var(--gold-light);
+      background: linear-gradient(135deg, #fde047 0%, #f59e0b 55%, #b45309 100%);
+      color: #1c0a00;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,0.08);
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .secondary-btn:hover {
+      background: rgba(251, 191, 36, 0.18);
+      border-color: var(--gold-main);
+    }
+
+    /* Card Preview Grid */
+    .preview-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .preview-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .cards-grid-screen {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .bingo-print-card {
+      background: #ffffff;
+      color: #111827;
+      border: 3px solid #111827;
+      border-radius: 10px;
+      padding: 14px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    }
+
+    .print-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 2px solid #111827;
+      padding-bottom: 6px;
+      gap: 8px;
+    }
+
+    .print-card-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #111827;
+      line-height: 1.25;
+    }
+
+    .print-card-id {
+      font-size: 15px;
+      font-weight: 900;
+      font-family: monospace;
+      background: #111827;
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+
+    .print-bingo-letters {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      text-align: center;
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 2px;
+      color: #111827;
+    }
+
+    .print-matrix {
+      display: grid;
+      border-top: 2.5px solid #111827;
+      border-left: 2.5px solid #111827;
+    }
+
+    .print-cell {
+      aspect-ratio: 1 / 1;
+      border-right: 2.5px solid #111827;
+      border-bottom: 2.5px solid #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: #111827;
+    }
+
+    .print-cell.free {
+      background: #f3f4f6;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+
+    .print-card-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #4b5563;
+      font-weight: 700;
+    }
+
+    /* ================= MODALS ================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.76);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #1a070c;
+      border: 2px solid var(--gold-main);
+      border-radius: 18px;
+      max-width: 560px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 22px 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 32px rgba(245, 158, 11, 0.28);
+      color: var(--text-main);
+    }
+
+    body.theme-blue .modal-box {
+      background: #08152e;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .modal-title {
+      font-size: 19px;
+      font-weight: 900;
+      color: var(--gold-light);
+    }
+
+    .modal-close {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--text-main);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      background: rgba(239, 68, 68, 0.45);
+    }
+
+    /* Card Verification Matrix inside Modal */
+    .verify-matrix-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      margin: 12px auto;
+    }
+
+    .verify-matrix {
+      display: grid;
+      gap: 6px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .verify-cell {
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--text-main);
+      position: relative;
+    }
+
+    .verify-cell.hit {
+      background: linear-gradient(135deg, #fde047 0%, #f59e0b 100%);
+      border-color: #fffbeb;
+      color: #450a0a;
+      box-shadow: 0 0 14px rgba(251, 191, 36, 0.65);
+    }
+
+    .verify-cell.line-hit {
+      background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%);
+      border-color: #dcfce7;
+      color: #052e16;
+      box-shadow: 0 0 16px rgba(34, 197, 94, 0.8);
+    }
+
+    .verify-cell.missing-one {
+      border-color: #fb923c;
+      background: rgba(249, 115, 22, 0.25);
+      animation: pulseBorder 1.4s infinite;
+    }
+
+    .verify-svg-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Void Cards Manager */
+    .void-quick-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .void-quick-row input {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .void-quick-row input:focus {
+      border-color: var(--gold-light);
+    }
+
+    .void-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+      gap: 6px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+    }
+
+    .void-card-btn {
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      background: rgba(20, 83, 45, 0.3);
+      color: #dcfce7;
+      padding: 6px 4px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .void-card-btn:hover {
+      border-color: var(--gold-light);
+    }
+
+    .void-card-btn.is-void {
+      border-color: rgba(239, 68, 68, 0.65);
+      background: rgba(127, 29, 29, 0.55);
+      color: #fca5a5;
+      text-decoration: line-through;
+      opacity: 0.78;
+    }
+
+    .void-banner {
+      background: rgba(185, 28, 28, 0.32);
+      border: 1.5px solid #f87171;
+      color: #fecaca;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    /* Print Card QR Code */
+    .print-card-qr-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 2px;
+      padding-top: 6px;
+      border-top: 1px dashed #9ca3af;
+    }
+
+    .print-qr-box {
+      width: 58px;
+      height: 58px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      padding: 2px;
+    }
+
+    .print-qr-box img, .print-qr-box canvas, .print-qr-box svg {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    .print-qr-note {
+      font-size: 10px;
+      line-height: 1.35;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    /* Big Screen QR Share Modal */
+    .qr-display-box {
+      width: 240px;
+      height: 240px;
+      margin: 12px auto;
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 14px;
+      border: 3px solid var(--gold-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .qr-display-box img, .qr-display-box canvas, .qr-display-box svg {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* Camera Scanner Video */
+    .scanner-video-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 10px auto;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid var(--gold-main);
+      background: #000;
+      aspect-ratio: 4 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scanner-video-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Mobile Employee Redemption View */
+    #viewMobile {
+      position: relative;
+      z-index: 30;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px 16px 60px;
+      min-height: 100vh;
+    }
+
+    #viewMobile.hidden {
+      display: none !important;
+    }
+
+    .mobile-card-shell {
+      background: var(--panel-bg);
+      border: 2px solid var(--gold-main);
+      border-radius: 20px;
+      padding: 18px 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .mobile-header {
+      text-align: center;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 10px;
+    }
+
+    .mobile-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--gold-light);
+    }
+
+    .mobile-badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #fde047 0%, #f59e0b 100%);
+      color: #290b02;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .mobile-status-bar {
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--panel-border);
+    }
+
+    .mobile-status-bar.win {
+      background: linear-gradient(135deg, rgba(22, 163, 74, 0.85) 0%, rgba(21, 128, 61, 0.9) 100%);
+      border-color: #86efac;
+      color: #ffffff;
+      animation: pulseBorder 1.5s infinite;
+    }
+
+    .mobile-grid {
+      display: grid;
+      gap: 7px;
+    }
+
+    .mobile-cell {
+      aspect-ratio: 1 / 1;
+      border-radius: 11px;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.18);
+      color: var(--text-main);
+      font-size: 22px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.12s, background 0.15s;
+    }
+
+    .mobile-cell:active {
+      transform: scale(0.94);
+    }
+
+    .mobile-cell.marked {
+      background: linear-gradient(135deg, #fde047 0%, #f59e0b 100%);
+      border-color: #fffbeb;
+      color: #450a0a;
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.65);
+    }
+
+    .mobile-cell.line-win {
+      background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%);
+      border-color: #dcfce7;
+      color: #052e16;
+    }
+
+    body.mobile-mode-active {
+      overflow-y: auto;
+      height: auto;
+    }
+
+    body.mobile-mode-active .top-bar,
+    body.mobile-mode-active #viewStage,
+    body.mobile-mode-active #viewCards,
+    body.mobile-mode-active #gameGuidePanel {
+      display: none !important;
+    }
+
+    /* Settings Modal Controls */
+    .setting-group {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .setting-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gold-light);
+    }
+
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 150px;
+      justify-content: flex-end;
+    }
+
+    input[type="range"] {
+      accent-color: #f59e0b;
+      cursor: pointer;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      border: 1px solid #fca5a5;
+      color: #fff;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-warn {
+      background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+      border: 1px solid #fed7aa;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Toast */
+    #toastBox {
+      position: fixed;
+      top: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-16px);
+      z-index: 200;
+      background: rgba(15, 5, 8, 0.94);
+      border: 1px solid var(--gold-light);
+      color: var(--gold-light);
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 800;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.65);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    #toastBox.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ================= RESPONSIVE FALLBACK ================= */
+    @media (max-width: 1100px) {
+      #viewStage {
+        grid-template-columns: 1fr;
+        grid-template-rows: 56vh 1fr;
+        height: auto;
+        min-height: calc(100vh - 78px);
+        overflow-y: auto;
+      }
+      html, body {
+        overflow-y: auto;
+      }
+      .stage-left {
+        border-right: none;
+        border-bottom: 1px solid var(--panel-border);
+      }
+      .cards-layout {
+        grid-template-columns: 1fr;
+      }
+      .top-bar {
+        grid-template-columns: 1fr;
+        height: auto;
+        padding: 10px 14px;
+      }
+      .nav-group, .nav-right {
+        justify-content: center;
+      }
+      #eventTitle {
+        max-width: 92vw;
+      }
+    }
+
+    /* ================= A4 BATCH PRINT STYLES ================= */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+
+      html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        overflow: visible !important;
+        height: auto !important;
+      }
+
+      .stage-bg-grid,
+      .top-bar,
+      #viewStage,
+      .config-panel,
+      .preview-toolbar,
+      .modal-backdrop,
+      .guide-float,
+      #viewMobile,
+      #toastBox {
+        display: none !important;
+      }
+
+      #viewCards {
+        display: block !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .cards-layout {
+        display: block !important;
+      }
+
+      .preview-panel {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+      }
+
+      .cards-grid-screen {
+        display: grid !important;
+        gap: 8mm !important;
+      }
+
+      .cards-grid-screen.print-per-page-2 {
+        grid-template-columns: 1fr !important;
+      }
+
+      .cards-grid-screen.print-per-page-2 .bingo-print-card {
+        height: 132mm;
+        justify-content: space-between;
+      }
+
+      .cards-grid-screen.print-per-page-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      .cards-grid-screen.print-per-page-4 .bingo-print-card {
+        padding: 8px;
+        gap: 4px;
+      }
+
+      .cards-grid-screen.print-per-page-4 .print-card-title {
+        font-size: 12px;
+      }
+
+      .cards-grid-screen.print-per-page-4 .print-cell {
+        font-size: 17px;
+      }
+
+      .bingo-print-card {
+        box-shadow: none !important;
+        border: 2.5px solid #000000 !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage-bg-grid"></div>
+
+  <!-- TOP NAVIGATION & EDITABLE TITLE -->
+  <header class="top-bar">
+    <div class="nav-group">
+      <button id="tabBtnStage" class="tab-btn active" type="button">🎰 3D 氣旋抽獎舞台</button>
+      <button id="tabBtnCards" class="tab-btn" type="button">🖨️ 紙卡設定與批量列印</button>
+      <span id="engineBadge" class="engine-badge" title="自動偵測 WebGL/Three.js，斷網時自動切換 Canvas 3D 引擎">
+        <span class="engine-dot"></span>
+        <span id="engineLabel">Canvas 3D 離線引擎</span>
+      </span>
+    </div>
+
+    <div class="title-wrap">
+      <div id="eventTitle" contenteditable="true" spellcheck="false" title="點擊即可直接修改活動主標題（編輯時自動暫停空白鍵抽獎）">2027 年度尾牙賓果抽獎盛典</div>
+      <div class="title-hint">點擊標題直接編輯・即時同步至紙卡抬頭</div>
+    </div>
+
+    <div class="nav-group nav-right">
+      <button id="btnToggleGuide" class="icon-btn active" type="button" title="顯示或隱藏可拖曳遊戲說明視窗">📖 遊戲說明</button>
+      <button id="btnTheme" class="icon-btn" type="button" title="切換深紅金 / 深藍金主題">🎨 切換風格</button>
+      <button id="btnSettings" class="icon-btn" type="button" title="旋轉速度、背景音樂、音效、報球語音">⚙️ 音效與機台設定</button>
+      <button id="btnExportJson" class="icon-btn" type="button" title="匯出完整備份檔 (.json)">💾 匯出備份</button>
+      <button id="btnImportJson" class="icon-btn" type="button" title="匯入備份檔 (.json)">📂 匯入備份</button>
+      <input id="importJsonInput" type="file" accept=".json,application/json" style="display:none" />
+    </div>
+  </header>
+
+  <!-- ================= TAB 1: 1920x1080 3D LOTTERY STAGE ================= -->
+  <main id="viewStage">
+    <!-- LEFT 65% -->
+    <section class="stage-left" id="stageLeft">
+      <div id="stage3DContainer"></div>
+
+      <!-- Top HUD -->
+      <div class="stage-hud-top">
+        <div class="hud-pill-group">
+          <div class="hud-pill">
+            <span class="hud-pill-label">已開出 / 總球數</span>
+            <span class="hud-pill-val" id="hudDrawnCount">0 / 75</span>
+          </div>
+          <div class="hud-pill" id="hudQuotaPill">
+            <span class="hud-pill-label">達標中獎 / 上限</span>
+            <span class="hud-pill-val" id="hudQuotaVal">0 / 5</span>
+          </div>
+          <div class="hud-pill">
+            <span class="hud-pill-label">盤面 / 連線門檻</span>
+            <span class="hud-pill-val" id="hudRuleVal">5×5・3線</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Centerpiece 3D Hero Reveal -->
+      <div class="hero-reveal" id="heroReveal">
+        <div class="hero-rays"></div>
+        <div class="hero-ball">
+          <div class="hero-ball-inner">
+            <span class="hero-ball-letter" id="heroBallLetter">BINGO</span>
+            <span class="hero-ball-num" id="heroBallNum">88</span>
+          </div>
+        </div>
+        <div class="hero-caption" id="heroCaption">本輪開出幸運獎號</div>
+      </div>
+
+      <!-- Draggable Latest Drawn Track -->
+      <div class="latest-track" id="latestTrack">
+        <div class="track-header" id="trackDragHandle" title="按住拖曳可自由移動展示軌位置">
+          <span class="track-title">⠿ 最新開出展示軌（可拖曳移動）</span>
+          <button type="button" class="track-reset-btn" id="btnResetTrackPos">重置位置</button>
+        </div>
+        <div class="track-rail" id="trackRail">
+          <span class="track-empty">尚未開獎，按下空白鍵或點擊「氣旋抽獎」啟動</span>
+        </div>
+      </div>
+
+      <!-- Bottom Controls -->
+      <div class="stage-controls">
+        <button id="btnDraw" class="draw-btn" type="button">🌪️ 氣旋抽獎 (Space)</button>
+        <button id="btnBgmQuick" class="sub-ctrl-btn" type="button">🎵 背景音樂：關</button>
+        <button id="btnShowSyncQr" class="sub-ctrl-btn" type="button" title="顯示大螢幕 QR Code 讓員工手機掃碼對獎與快速兌獎">📲 手機兌獎 QR</button>
+        <button id="btnResetDraw" class="sub-ctrl-btn" type="button">🔄 重置本局開獎</button>
+      </div>
+    </section>
+
+    <!-- RIGHT 35% -->
+    <aside class="stage-right">
+      <!-- Drawn Numbers Panel -->
+      <div class="board-card drawn-section">
+        <div class="board-card-header">
+          <span class="board-card-title">🎱 已開出號碼區</span>
+          <div class="mini-toggle">
+            <button id="sortOrderBtn" class="active" type="button">開出順序</button>
+            <button id="sortNumBtn" type="button">數字大小</button>
+          </div>
+        </div>
+        <div class="drawn-summary-row">
+          <div class="latest-ball-box" id="latestBallBox">--</div>
+          <div>
+            <div style="font-size:12px;color:var(--text-muted)">最新獎號</div>
+            <div style="font-size:15px;font-weight:800;color:var(--gold-light)" id="latestBallText">等待開獎...</div>
+          </div>
+        </div>
+        <div class="drawn-grid" id="drawnGrid"></div>
+      </div>
+
+      <!-- Auto Matching Panel -->
+      <div class="board-card match-section">
+        <div class="board-card-header">
+          <span class="board-card-title">⚡ 自動配對追蹤（<span id="poolCountLabel">有效 100 張</span>）</span>
+          <button id="btnOpenVoidModal" class="preset-btn" type="button" title="將現場未發出的剩餘紙卡作廢排除">🚫 廢牌管理</button>
+        </div>
+
+        <div class="match-subbox winners-box">
+          <div class="match-sub-title" style="color:#86efac;">
+            <span>🎉 已中獎達標卡號</span>
+            <span id="winnerCountBadge">0 張</span>
+          </div>
+          <div class="match-list" id="winnerList">
+            <span style="font-size:12px;color:var(--text-muted)">尚無達標卡片</span>
+          </div>
+        </div>
+
+        <div class="match-subbox ready-box">
+          <div class="match-sub-title" style="color:#fdba74;">
+            <span>🔥 聽牌中（只差 1 格即達標）</span>
+            <span id="readyCountBadge">0 張</span>
+          </div>
+          <div class="match-list" id="readyList">
+            <span style="font-size:12px;color:var(--text-muted)">尚無聽牌卡片</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Card Verification -->
+      <div class="board-card verify-section">
+        <div class="board-card-header" style="margin-bottom:6px;">
+          <span class="board-card-title">🔍 現場快速驗卡查詢</span>
+        </div>
+        <div class="verify-row">
+          <input id="verifyCardInput" class="verify-input" type="text" placeholder="輸入卡號或掃碼槍掃描（如 15）" />
+          <button id="btnCamScan" class="sub-ctrl-btn" type="button" style="padding:0 12px;" title="開啟鏡頭掃描員工紙卡或手機兌獎 QR">📷 掃碼</button>
+          <button id="btnVerifyCard" class="verify-btn" type="button">立即對獎</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ================= TAB 2: CARD SETTINGS & A4 BATCH PRINT ================= -->
+  <section id="viewCards" class="hidden">
+    <div class="cards-layout">
+      <!-- Config Panel -->
+      <div class="config-panel">
+        <h2 class="section-h2">🎫 紙卡卡池與中獎名額設定</h2>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="cfgRangePreset">號碼範圍預設</label>
+            <select id="cfgRangePreset">
+              <option value="75">1 – 75（標準賓果）</option>
+              <option value="49">1 – 49（大樂透風）</option>
+              <option value="25">1 – 25（快節奏）</option>
+              <option value="custom">自訂最大號碼</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="cfgMaxNum">最大號碼（1 ~ N）</label>
+            <input id="cfgMaxNum" type="number" min="9" max="99" value="75" />
+          </div>
+
+          <div class="form-field">
+            <label for="cfgGridSize">盤面格數</label>
+            <select id="cfgGridSize">
+              <option value="5">5×5（中央含 FREE 格）</option>
+              <option value="3">3×3（9 格快抽）</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="cfgTotalCards">發行總張數（No.001 ~）</label>
+            <input id="cfgTotalCards" type="number" min="1" max="500" value="100" />
+          </div>
+
+          <div class="form-field">
+            <label for="cfgLineThreshold">中獎連線門檻（條線）</label>
+            <input id="cfgLineThreshold" type="number" min="1" max="12" value="3" />
+          </div>
+
+          <div class="form-field">
+            <label for="cfgMaxWinners">設定中獎卡數量上限（0 = 不限）</label>
+            <input id="cfgMaxWinners" type="number" min="0" max="500" value="5" />
+          </div>
+
+          <div class="form-field full">
+            <label for="cfgPrintPerPage">A4 每頁列印排版</label>
+            <select id="cfgPrintPerPage">
+              <option value="4">每頁 4 張（2×2 緊湊省紙）</option>
+              <option value="2">每頁 2 張（上下大字高對比）</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Smart Parameter Advisor -->
+        <div class="advisor-box" id="advisorBox">
+          <div class="advisor-title">
+            <span>💡 智慧參數設定建議</span>
+            <span class="advisor-status good" id="advisorStatus">配置均衡</span>
+          </div>
+          <ul class="advisor-list" id="advisorList"></ul>
+          <div class="preset-row">
+            <button type="button" class="preset-btn" data-preset="standard">尾牙百人標準</button>
+            <button type="button" class="preset-btn" data-preset="fast">小型快節奏</button>
+            <button type="button" class="preset-btn" data-preset="grand">大型盛會(300張)</button>
+          </div>
+        </div>
+
+        <button id="btnGenerateCards" class="primary-btn" type="button">✨ 生成新卡池並同步存檔</button>
+        <button id="btnPrintCards" class="secondary-btn" type="button">🖨️ A4 批量列印 / 另存 PDF</button>
+        <button id="btnOpenVoidModalTab2" class="secondary-btn" type="button">🚫 未發出剩餘卡片作廢管理</button>
+      </div>
+
+      <!-- Preview Panel -->
+      <div class="preview-panel">
+        <div class="preview-toolbar">
+          <div>
+            <h2 class="section-h2">📄 紙卡列印預覽（共 <span id="previewTotalCount">100</span> 張）</h2>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+              列印時將自動隱藏所有操作按鈕，並套用 <code>@media print</code> 與 <code>break-inside: avoid</code> 防止斷頁
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:12px;color:var(--text-muted)" id="printLayoutHint">A4 每頁 4 張</span>
+            <button id="btnPrintCardsTop" class="tab-btn active" type="button">🖨️ 立即列印</button>
+          </div>
+        </div>
+        <div id="cardsPrintGrid" class="cards-grid-screen print-per-page-4"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: CARD VERIFICATION ================= -->
+  <div class="modal-backdrop" id="modalVerify">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="verifyModalTitle">🔍 驗卡對獎結果</h3>
+        <button type="button" class="modal-close" data-close="modalVerify">✕</button>
+      </div>
+      <div id="verifyModalSummary" style="font-size:14px;line-height:1.6;margin-bottom:8px;"></div>
+      <div class="verify-matrix-wrap">
+        <div class="verify-matrix" id="verifyMatrix"></div>
+        <svg class="verify-svg-overlay" id="verifySvgOverlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      </div>
+      <div id="verifyModalFooter" style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: MACHINE & AUDIO SETTINGS ================= -->
+  <div class="modal-backdrop" id="modalSettings">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ 機台動力、音效與語音獨立設定</h3>
+        <button type="button" class="modal-close" data-close="modalSettings">✕</button>
+      </div>
+
+      <!-- Spin Speed & Engine -->
+      <div class="setting-group">
+        <div class="setting-row">
+          <span class="setting-label">🌪️ 氣旋與吹氣旋轉速度</span>
+          <div class="range-wrap">
+            <input id="setSpinSpeed" type="range" min="0.4" max="2.5" step="0.1" value="1.0" />
+            <span id="setSpinSpeedVal" style="font-size:13px;font-weight:800;min-width:42px;text-align:right;">1.0x</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">🖥️ 3D 渲染引擎切換</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="setEngineMode" style="background:rgba(0,0,0,0.55);border:1px solid var(--panel-border);color:var(--text-main);padding:5px 9px;border-radius:8px;font-size:12px;">
+              <option value="auto">自動（優先 Three.js，斷網切 Canvas 3D）</option>
+              <option value="canvas">強制使用 Canvas 3D 離線引擎</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- BGM -->
+      <div class="setting-group">
+        <div class="setting-row">
+          <span class="setting-label">🎵 背景音樂（BGM）</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="btnToggleBgm" class="tab-btn" type="button" style="padding:5px 10px;font-size:12px;">▶ 播放預設音樂</button>
+            <button id="btnMuteBgm" class="tab-btn" type="button" style="padding:5px 10px;font-size:12px;">🔊 正常</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span style="font-size:12px;color:var(--text-muted)">音量調整</span>
+          <div class="range-wrap">
+            <input id="setBgmVol" type="range" min="0" max="1" step="0.05" value="0.45" />
+            <span id="setBgmVolVal" style="font-size:12px;min-width:38px;text-align:right;">45%</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span style="font-size:12px;color:var(--text-muted)" id="bgmSourceLabel">目前音源：內建喜慶合成背景樂</span>
+          <div style="display:flex;gap:6px;">
+            <button id="btnImportBgm" class="preset-btn" type="button">📂 匯入自訂音樂</button>
+            <button id="btnResetBgm" class="preset-btn" type="button">還原預設</button>
+            <input id="inputBgmFile" type="file" accept="audio/*" style="display:none" />
+          </div>
+        </div>
+      </div>
+
+      <!-- SFX -->
+      <div class="setting-group">
+        <div class="setting-row">
+          <span class="setting-label">🔔 抽獎與開球音效（SFX）</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="btnTestSfx" class="tab-btn" type="button" style="padding:5px 10px;font-size:12px;">測試音效</button>
+            <button id="btnMuteSfx" class="tab-btn" type="button" style="padding:5px 10px;font-size:12px;">🔊 正常</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span style="font-size:12px;color:var(--text-muted)">音效音量</span>
+          <div class="range-wrap">
+            <input id="setSfxVol" type="range" min="0" max="1" step="0.05" value="0.75" />
+            <span id="setSfxVolVal" style="font-size:12px;min-width:38px;text-align:right;">75%</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span style="font-size:12px;color:var(--text-muted)" id="sfxSourceLabel">目前音源：內建氣流＋中獎號角音效</span>
+          <div style="display:flex;gap:6px;">
+            <button id="btnImportSfx" class="preset-btn" type="button">📂 匯入中獎音效</button>
+            <button id="btnResetSfx" class="preset-btn" type="button">還原預設</button>
+            <input id="inputSfxFile" type="file" accept="audio/*" style="display:none" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Voice Announcer -->
+      <div class="setting-group">
+        <div class="setting-row">
+          <span class="setting-label">🗣️ AI 語音報球號（Web Speech）</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button id="btnToggleVoice" class="tab-btn active" type="button" style="padding:5px 10px;font-size:12px;">🗣️ 報號：開</button>
+            <button id="btnTestVoice" class="preset-btn" type="button">試聽報號</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span style="font-size:12px;color:var(--text-muted)">語音音量</span>
+          <div class="range-wrap">
+            <input id="setVoiceVol" type="range" min="0" max="1" step="0.05" value="0.9" />
+            <span id="setVoiceVolVal" style="font-size:12px;min-width:38px;text-align:right;">90%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="primary-btn" style="width:auto;padding:9px 24px;" data-close="modalSettings">完成設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: VOID UNISSUED CARDS MANAGER ================= -->
+  <div class="modal-backdrop" id="modalVoidCards">
+    <div class="modal-box" style="max-width:620px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🚫 未發出卡片作廢管理（排除計算）</h3>
+        <button type="button" class="modal-close" data-close="modalVoidCards">✕</button>
+      </div>
+
+      <div style="font-size:13px;color:#fef3c7;line-height:1.6;margin-bottom:12px;">
+        作廢後的卡片將<strong>完全排除於系統計算之外</strong>：不會列入中獎達標、不會列入聽牌追蹤、不會佔用中獎名額上限，驗卡時亦會直接顯示為「作廢廢牌」。
+      </div>
+
+      <!-- Fast Cutoff: Issued up to No. X -->
+      <div class="setting-group">
+        <div class="setting-label">⚡ 快捷設定：現場最後發出的卡號（之後的未發出卡片全數作廢）</div>
+        <div class="void-quick-row">
+          <span style="font-size:12px;color:var(--text-muted)">現場只發到第</span>
+          <input id="voidCutoffInput" type="number" min="0" max="500" placeholder="例如 82" style="width:96px;" />
+          <span style="font-size:12px;color:var(--text-muted)">號</span>
+          <button id="btnApplyVoidCutoff" class="btn-warn" type="button" style="padding:7px 14px;font-size:12px;">套用（後方全數作廢）</button>
+        </div>
+      </div>
+
+      <!-- Custom Range / Specific Numbers -->
+      <div class="setting-group">
+        <div class="setting-label">✏️ 指定單張或區間作廢（支援逗號與連字號，例如：5, 12, 83-100）</div>
+        <div class="void-quick-row">
+          <input id="voidRangeInput" type="text" placeholder="輸入卡號或區間，如 5, 12, 83-100" style="flex:1;min-width:180px;" />
+          <button id="btnAddVoidRange" class="btn-danger" type="button" style="padding:7px 12px;font-size:12px;">加入作廢</button>
+          <button id="btnRestoreVoidRange" class="btn-ghost" type="button" style="padding:7px 12px;font-size:12px;">恢復有效</button>
+        </div>
+      </div>
+
+      <!-- Visual Toggle Grid -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:800;color:var(--gold-light)" id="voidStatsLabel">有效：100 張｜已作廢：0 張</span>
+        <button id="btnClearAllVoid" class="preset-btn" type="button">♻️ 全部恢復有效</button>
+      </div>
+      <div class="void-grid" id="voidCardGrid"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="primary-btn" style="width:auto;padding:9px 24px;" data-close="modalVoidCards">完成並套用</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: SYSTEM ALERT / THRESHOLD CONFIRM ================= -->
+  <div class="modal-backdrop" id="modalAlert">
+    <div class="modal-box" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="alertModalTitle">⚠️ 系統警示</h3>
+        <button type="button" class="modal-close" data-close="modalAlert">✕</button>
+      </div>
+      <div id="alertModalBody" style="font-size:15px;line-height:1.7;color:#fef3c7;"></div>
+      <div class="modal-actions" id="alertModalActions"></div>
+    </div>
+  </div>
+
+  <!-- ================= FLOATING DRAGGABLE & HIDEABLE GAME GUIDE ================= -->
+  <aside id="gameGuidePanel" class="guide-float" aria-label="完整遊戲說明">
+    <div class="guide-header" id="guideDragHandle" title="按住標題列可自由拖曳至畫面任意位置">
+      <span class="guide-title">⠿ 📖 完整遊戲說明（可拖曳）</span>
+      <div class="guide-header-btns">
+        <button type="button" class="guide-mini-btn" id="btnResetGuidePos" title="重置回預設位置">重置</button>
+        <button type="button" class="guide-mini-btn" id="btnHideGuide" title="隱藏說明區塊">✕ 隱藏</button>
+      </div>
+    </div>
+    <div class="guide-body">
+      <div class="guide-rule-pill" id="guideLiveSummary">
+        本局規則：1–75 號｜5×5 盤面｜連成 3 條線達標｜上限 5 名
+      </div>
+
+      <div class="guide-sec">
+        <h4>🎯 一、賓果玩法與連線判定</h4>
+        <ul id="guideRuleBullets">
+          <li>每張紙卡具備專屬編號（如 <strong>No.001</strong>）與獨立隨機數字盤面。</li>
+          <li><strong>5×5 盤面</strong>中央為 <strong>FREE 免填格</strong>（開局自動計入命中）；3×3 盤面則為全數字快抽。</li>
+          <li>凡<strong>橫排、直排或對角線</strong>整排號碼皆已開出即算 1 條連線，累計達設定門檻即為<strong>達標中獎卡</strong>。</li>
+        </ul>
+      </div>
+
+      <div class="guide-sec">
+        <h4>🌪️ 二、氣旋抽獎與現場操作</h4>
+        <ul>
+          <li>點擊<strong>「氣旋抽獎」</strong>或按鍵盤 <strong>Space（空白鍵）</strong>啟動高壓吹氣攪拌 2.5 秒並抽出 1 顆幸運球。</li>
+          <li>點擊頂部金色主標題可直接修改活動名稱（編輯文字或輸入卡號時會自動暫停空白鍵，避免誤抽）。</li>
+          <li><strong>最新開出展示軌</strong>與<strong>本遊戲說明視窗</strong>皆可按住頂部拖曳列自由移動位置，並隨時點擊「📖 遊戲說明」切換顯示或隱藏。</li>
+          <li>點選右上角<strong>「⚙️ 音效與機台設定」</strong>可獨立調整旋轉速度、背景音樂、開球音效（支援匯入自訂音檔）與 AI 語音報號。</li>
+        </ul>
+      </div>
+
+      <div class="guide-sec">
+        <h4>🛡️ 三、中獎名額精控與強制保護</h4>
+        <ul>
+          <li><strong>即將達標警示：</strong>當達標人數逼近上限或聽牌卡可能於下一球達標時，系統將先跳出警示視窗，需由主持人確認後再繼續搖號。</li>
+          <li><strong>演算法防超發介入：</strong>抽號時自動模擬掃描全套卡池，嚴格排除會導致總中獎卡數超過上限的號碼。</li>
+          <li><strong>達標自動鎖定：</strong>一旦達標張數達到設定上限，系統立即彈窗通知並鎖定抽獎按鈕，不再提供抽籤。</li>
+        </ul>
+      </div>
+
+      <div class="guide-sec">
+        <h4>🔍 四、現場對獎、印卡與離線備份</h4>
+        <ul>
+          <li>每開出一球即自動掃描全卡池，右側看板即時列出<strong>「🎉 已中獎達標」</strong>與<strong>「🔥 聽牌中（缺碼）」</strong>卡號，點擊任一卡號或在下方輸入編號即可彈出完整矩陣高亮對獎圖。</li>
+          <li>切換至<strong>「🖨️ 紙卡設定與批量列印」</strong>可依智慧建議調整參數並以 A4（每頁 2 張或 4 張）批量列印。</li>
+          <li><strong>未發出廢牌作廢：</strong>點擊「🚫 廢牌管理」可一鍵將現場未發出的剩餘卡號（如 83–100 號）設為作廢，系統將自動完全排除於中獎、聽牌與名額控管計算之外。</li>
+          <li>事前印卡後請按<strong>「💾 匯出備份」</strong>存下 <code>.json</code>，至活動現場即使完全斷網，亦可直接開啟本頁並<strong>「📂 匯入備份」</strong>同步卡池。</li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MOBILE EMPLOYEE REDEMPTION VIEW (GitHub Pages QR) ================= -->
+  <section id="viewMobile" class="hidden" aria-label="員工手機快速對獎與兌獎">
+    <div class="mobile-card-shell">
+      <div class="mobile-header">
+        <div class="mobile-title" id="mobileEventTitle">2027 年度尾牙賓果抽獎盛典</div>
+        <div class="mobile-badge" id="mobileCardBadge">尚未綁定卡號</div>
+      </div>
+
+      <!-- Enter or switch card number -->
+      <div class="verify-row">
+        <input id="mobileCardInput" class="verify-input" type="text" placeholder="輸入你的卡號（如 15）" />
+        <button id="btnMobileBindCard" class="verify-btn" type="button">綁定卡號</button>
+      </div>
+
+      <div class="mobile-status-bar" id="mobileStatusBar">
+        請掃描紙卡 QR Code 或輸入卡號以開啟電子對獎卡
+      </div>
+
+      <!-- Interactive 5x5 / 3x3 Grid -->
+      <div class="mobile-grid" id="mobileCardGrid"></div>
+
+      <div style="font-size:12px;color:var(--text-muted);text-align:center;line-height:1.5;">
+        💡 <strong>操作提示：</strong>點擊格子可手動標記已開出號碼；或掃描現場大螢幕「📲 手機兌獎 QR」一鍵同步全部已開獎號碼！
+      </div>
+
+      <!-- Employee Redemption Pass QR (For Staff to Scan at Stage) -->
+      <div id="mobileRedeemSection" style="text-align:center;border-top:1px solid var(--panel-border);padding-top:12px;display:none;">
+        <div style="font-size:14px;font-weight:900;color:var(--gold-light);margin-bottom:4px;">🎟️ 員工快速兌獎核銷 QR Code</div>
+        <div style="font-size:12px;color:var(--text-muted);">中獎時請直接出示此畫面給台前工作人員掃碼核對</div>
+        <div class="qr-display-box" id="mobileRedeemQrBox" style="width:190px;height:190px;"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button id="btnMobileClearMarks" class="btn-ghost" type="button" style="font-size:12px;">清除手動標記</button>
+        <button id="btnExitMobileMode" class="btn-ghost" type="button" style="font-size:12px;">🖥️ 切換回主控台模式</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: BIG SCREEN SYNC QR FOR EMPLOYEES ================= -->
+  <div class="modal-backdrop" id="modalSyncQr">
+    <div class="modal-box" style="max-width:500px;text-align:center;">
+      <div class="modal-header">
+        <h3 class="modal-title">📲 員工手機掃碼對獎與快速兌獎</h3>
+        <button type="button" class="modal-close" data-close="modalSyncQr">✕</button>
+      </div>
+      <div style="font-size:13px;color:#fef3c7;line-height:1.6;">
+        員工用手機掃描下方 QR Code，即可開啟 <strong>GitHub Pages 手機兌獎頁</strong>並<strong>自動同步目前所有已開出號碼</strong>（共 <strong id="syncQrDrawnCount">0</strong> 球），系統將立即自動對獎並產生兌獎核銷碼！
+      </div>
+      <div class="qr-display-box" id="syncQrCanvasBox"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;word-break:break-all;" id="syncQrUrlHint"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button id="btnCopySyncUrl" class="preset-btn" type="button" style="padding:8px 14px;font-size:12px;">📋 複製手機對獎連結</button>
+        <button id="btnPreviewMobile" class="preset-btn" type="button" style="padding:8px 14px;font-size:12px;">📱 預覽員工手機畫面</button>
+        <button type="button" class="primary-btn" style="width:auto;padding:8px 20px;font-size:13px;" data-close="modalSyncQr">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CAMERA QR SCANNER FOR HOST ================= -->
+  <div class="modal-backdrop" id="modalCamScan">
+    <div class="modal-box" style="max-width:480px;text-align:center;">
+      <div class="modal-header">
+        <h3 class="modal-title">📷 現場鏡頭掃碼極速驗卡</h3>
+        <button type="button" class="modal-close" id="btnCloseCamScan">✕</button>
+      </div>
+      <div style="font-size:13px;color:#fef3c7;margin-bottom:6px;">
+        請將員工的<strong>紙卡 QR Code</strong> 或<strong>手機兌獎核銷碼</strong>對準鏡頭（亦支援直接插上 USB 掃碼槍於輸入框掃描）
+      </div>
+      <div class="scanner-video-wrap">
+        <video id="camScanVideo" playsinline muted></video>
+      </div>
+      <div id="camScanStatus" style="font-size:13px;font-weight:700;color:var(--gold-light);margin-top:8px;">正在啟動攝影機...</div>
+    </div>
+  </div>
+
+  <div id="toastBox"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ============================================================
+         1. STATE & PERSISTENCE (localStorage + JSON Backup)
+      ============================================================ */
+      const STORAGE_KEY = 'cyclone_bingo_pro_v2';
+
+      const DEFAULT_STATE = {
+        eventTitle: '2027 年度尾牙賓果抽獎盛典',
+        theme: 'red', // 'red' | 'blue'
+        rangePreset: '75',
+        maxNum: 75,
+        gridSize: 5, // 5 or 3
+        totalCards: 100,
+        lineThreshold: 3,
+        maxWinners: 5, // 0 = unlimited
+        printPerPage: 4,
+        cards: [], // [{ id: 1, code: 'No.001', grid: [...] }]
+        voidCardIds: [], // [83, 84, ...] unissued/voided card IDs excluded from all calculations
+        drawnNumbers: [],
+        sortMode: 'order', // 'order' | 'num'
+        spinSpeed: 1.0,
+        engineMode: 'auto', // 'auto' | 'canvas'
+        bgmMuted: false,
+        bgmVol: 0.45,
+        sfxMuted: false,
+        sfxVol: 0.75,
+        voiceEnabled: true,
+        voiceVol: 0.9,
+        trackPos: null, // { left, top }
+        guideVisible: true,
+        guidePos: null // { left, top }
+      };
+
+      let state = loadState();
+      let isSpinning = false;
+      let threeLoaded = false;
+      let activeEngine = 'canvas'; // 'three' | 'canvas'
+      let heroHideTimer = null;
+      let bgmPlaying = false;
+
+      // Custom imported audio URLs (in-memory session)
+      let customBgmAudio = null;
+      let customBgmName = '';
+      let customSfxAudio = null;
+      let customSfxName = '';
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            return Object.assign({}, DEFAULT_STATE, parsed);
+          }
+        } catch (e) {
+          // Ignore storage error in restricted environments
+        }
+        return Object.assign({}, DEFAULT_STATE);
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+          // Ignore quota/sandbox error
+        }
+      }
+
+      function showToast(msg) {
+        const el = document.getElementById('toastBox');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => el.classList.remove('show'), 2800);
+      }
+
+      /* ============================================================
+         2. BINGO CARD GENERATION & FAST MATCHING ENGINE
+      ============================================================ */
+      function padCardCode(n, total) {
+        const digits = Math.max(3, String(total || 100).length);
+        return 'No.' + String(n).padStart(digits, '0');
+      }
+
+      function generateSingleCard(id, totalCards, maxNum, gridSize) {
+        const totalCells = gridSize * gridSize;
+        const hasFree = (gridSize === 5);
+        const centerIdx = Math.floor(totalCells / 2);
+        const grid = new Array(totalCells).fill(null);
+
+        // Classic B-I-N-G-O column ranges when 5x5 and maxNum === 75
+        if (gridSize === 5 && maxNum === 75) {
+          for (let col = 0; col < 5; col++) {
+            const min = col * 15 + 1;
+            const max = (col + 1) * 15;
+            const pool = [];
+            for (let v = min; v <= max; v++) pool.push(v);
+            shuffleArray(pool);
+            for (let row = 0; row < 5; row++) {
+              const idx = row * 5 + col;
+              grid[idx] = (hasFree && idx === centerIdx) ? 'FREE' : pool[row];
+            }
+          }
+        } else {
+          const pool = [];
+          for (let v = 1; v <= maxNum; v++) pool.push(v);
+          shuffleArray(pool);
+          let p = 0;
+          for (let i = 0; i < totalCells; i++) {
+            if (hasFree && i === centerIdx) {
+              grid[i] = 'FREE';
+            } else {
+              grid[i] = pool[p % pool.length];
+              p++;
+            }
+          }
+        }
+
+        return {
+          id,
+          code: padCardCode(id, totalCards),
+          grid
+        };
+      }
+
+      function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = arr[i];
+          arr[i] = arr[j];
+          arr[j] = tmp;
+        }
+        return arr;
+      }
+
+      function generateCardPool(silent) {
+        const minNeeded = state.gridSize === 5 ? 24 : 9;
+        if (state.maxNum < minNeeded) {
+          state.maxNum = minNeeded;
+        }
+        const cards = [];
+        for (let i = 1; i <= state.totalCards; i++) {
+          cards.push(generateSingleCard(i, state.totalCards, state.maxNum, state.gridSize));
+        }
+        state.cards = cards;
+        state.voidCardIds = [];
+        state.drawnNumbers = [];
+        saveState();
+        sync3DBalls();
+        renderAll();
+        if (!silent) {
+          showToast(`已生成 ${state.totalCards} 張新紙卡（1–${state.maxNum}，${state.gridSize}×${state.gridSize}）`);
+        }
+      }
+
+      function getAllLines(gridSize) {
+        const lines = [];
+        // Rows
+        for (let r = 0; r < gridSize; r++) {
+          const line = [];
+          for (let c = 0; c < gridSize; c++) line.push(r * gridSize + c);
+          lines.push(line);
+        }
+        // Cols
+        for (let c = 0; c < gridSize; c++) {
+          const line = [];
+          for (let r = 0; r < gridSize; r++) line.push(r * gridSize + c);
+          lines.push(line);
+        }
+        // Diagonals
+        const d1 = [], d2 = [];
+        for (let i = 0; i < gridSize; i++) {
+          d1.push(i * gridSize + i);
+          d2.push(i * gridSize + (gridSize - 1 - i));
+        }
+        lines.push(d1, d2);
+        return lines;
+      }
+
+      function evaluateCard(card, drawnSet, gridSize, lineThreshold) {
+        const lines = getAllLines(gridSize);
+        const completedLines = [];
+        const oneAwayMissing = new Set();
+
+        for (let li = 0; li < lines.length; li++) {
+          const line = lines[li];
+          let missing = [];
+          for (let k = 0; k < line.length; k++) {
+            const val = card.grid[line[k]];
+            if (val !== 'FREE' && !drawnSet.has(val)) {
+              missing.push(val);
+            }
+          }
+          if (missing.length === 0) {
+            completedLines.push(line);
+          } else if (missing.length === 1) {
+            oneAwayMissing.add(missing[0]);
+          }
+        }
+
+        const lineCount = completedLines.length;
+        const isWinner = lineCount >= lineThreshold;
+        const isReady = !isWinner && (lineCount === lineThreshold - 1) && oneAwayMissing.size > 0;
+
+        return {
+          card,
+          lineCount,
+          completedLines,
+          isWinner,
+          isReady,
+          missingNumbers: Array.from(oneAwayMissing).sort((a, b) => a - b)
+        };
+      }
+
+      function getVoidSet() {
+        return new Set(Array.isArray(state.voidCardIds) ? state.voidCardIds : []);
+      }
+
+      function scanCardPool(drawnList) {
+        const drawnSet = new Set(drawnList);
+        const voidSet = getVoidSet();
+        const winners = [];
+        const ready = [];
+        for (let i = 0; i < state.cards.length; i++) {
+          const card = state.cards[i];
+          if (voidSet.has(card.id)) continue;
+          const res = evaluateCard(card, drawnSet, state.gridSize, state.lineThreshold);
+          if (res.isWinner) winners.push(res);
+          else if (res.isReady) ready.push(res);
+        }
+        return { winners, ready };
+      }
+
+      function countWinnersWithCandidate(candidateNum) {
+        const drawnSet = new Set(state.drawnNumbers);
+        drawnSet.add(candidateNum);
+        const voidSet = getVoidSet();
+        const lines = getAllLines(state.gridSize);
+        let winCount = 0;
+        for (let i = 0; i < state.cards.length; i++) {
+          if (voidSet.has(state.cards[i].id)) continue;
+          const grid = state.cards[i].grid;
+          let lc = 0;
+          for (let li = 0; li < lines.length; li++) {
+            const line = lines[li];
+            let ok = true;
+            for (let k = 0; k < line.length; k++) {
+              const v = grid[line[k]];
+              if (v !== 'FREE' && !drawnSet.has(v)) {
+                ok = false;
+                break;
+              }
+            }
+            if (ok) lc++;
+          }
+          if (lc >= state.lineThreshold) winCount++;
+        }
+        return winCount;
+      }
+
+      /* ============================================================
+         3. SMART PARAMETER ADVISOR (Tab 2)
+      ============================================================ */
+      function updateSmartAdvisor() {
+        const maxNum = parseInt(document.getElementById('cfgMaxNum').value, 10) || 75;
+        const gridSize = parseInt(document.getElementById('cfgGridSize').value, 10) || 5;
+        const totalCards = parseInt(document.getElementById('cfgTotalCards').value, 10) || 100;
+        const lineThreshold = parseInt(document.getElementById('cfgLineThreshold').value, 10) || 3;
+        const maxWinners = parseInt(document.getElementById('cfgMaxWinners').value, 10) || 0;
+
+        const minCells = gridSize === 5 ? 24 : 9;
+        const maxLines = gridSize === 5 ? 12 : 8;
+        const tips = [];
+        let statusClass = 'good';
+        let statusText = '配置均衡';
+
+        // 1. Range vs Grid
+        if (maxNum < minCells) {
+          statusClass = 'bad';
+          statusText = '號碼不足';
+          tips.push(`❌ <strong>號碼範圍過小：</strong>${gridSize}×${gridSize} 盤面至少需要 ${minCells} 個不重複數字，請將最大號碼調高至 ${minCells} 以上。`);
+        } else if (gridSize === 5 && maxNum < 45) {
+          statusClass = 'warn';
+          statusText = '節奏偏快';
+          tips.push(`⚡ <strong>高命中密度：</strong>5×5 搭配 1–${maxNum} 號碼重疊率極高，建議調高至 1–75 或提高連線門檻至 4–5 條線。`);
+        } else {
+          tips.push(`✅ <strong>號碼與盤面：</strong>1–${maxNum} 搭配 ${gridSize}×${gridSize} 分布合理，${gridSize === 5 && maxNum === 75 ? '符合標準 B-I-N-G-O 欄位規則。' : '開獎節奏流暢。'}`);
+        }
+
+        // 2. Threshold vs Grid
+        if (lineThreshold > maxLines) {
+          statusClass = 'bad';
+          statusText = '門檻超限';
+          tips.push(`❌ <strong>連線門檻錯誤：</strong>${gridSize}×${gridSize} 最多僅有 ${maxLines} 條連線，請下修門檻。`);
+        } else if (gridSize === 5 && lineThreshold <= 1 && totalCards >= 50) {
+          if (statusClass === 'good') { statusClass = 'warn'; statusText = '易提早結束'; }
+          tips.push(`⚠️ <strong>連線門檻偏低：</strong>${totalCards} 張卡只設 1 條線容易在 12 球內迅速爆量中獎，建議設為 <strong>3 條線</strong>。`);
+        } else {
+          tips.push(`🎯 <strong>連線門檻：</strong>${lineThreshold} 條線適合約 ${gridSize === 5 ? (lineThreshold * 11 + 14) : (lineThreshold * 5 + 6)} 球左右的現場高潮節奏。`);
+        }
+
+        // 3. Total cards vs Max Winners
+        if (maxWinners === 0) {
+          tips.push(`🎲 <strong>純隨機模式：</strong>中獎上限設為 0（不限制），系統將完全自然開獎，不介入避開號碼。`);
+        } else if (maxWinners > totalCards) {
+          statusClass = 'bad';
+          statusText = '名額大於發行量';
+          tips.push(`❌ <strong>中獎上限過高：</strong>中獎卡數量（${maxWinners}）大於發行總張數（${totalCards}），請修正。`);
+        } else {
+          const ratio = ((maxWinners / totalCards) * 100).toFixed(1);
+          if (totalCards >= 80 && maxWinners <= 2 && maxNum <= 49) {
+            if (statusClass === 'good') { statusClass = 'warn'; statusText = '撞號風險高'; }
+            tips.push(`🛡️ <strong>名額精控提醒：</strong>${totalCards} 張僅取 ${maxWinners} 名（${ratio}%），同球同時多人達標機率較高；本系統已啟用「即將達標警示＋強制避開超額號碼」保護。`);
+          } else {
+            tips.push(`🏆 <strong>名額控管建議：</strong>上限 ${maxWinners} 名（中獎率約 ${ratio}%），即將達標時系統將自動彈窗確認並鎖定演算法，確保絕不超發獎品。`);
+          }
+        }
+
+        const badge = document.getElementById('advisorStatus');
+        badge.className = 'advisor-status ' + statusClass;
+        badge.textContent = statusText;
+        document.getElementById('advisorList').innerHTML = tips.map(t => `<li>${t}</li>`).join('');
+      }
+
+      /* ============================================================
+         4. AUDIO ENGINE (Web Audio API BGM + SFX + Voice + Import)
+      ============================================================ */
+      let audioCtx = null;
+      let bgmTimer = null;
+      let bgmStep = 0;
+
+      function ensureAudioCtx() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) audioCtx = new AC();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+        return audioCtx;
+      }
+
+      // Festive Pentatonic Synth BGM (Zero external files)
+      function startDefaultBgmLoop() {
+        stopBgm();
+        bgmPlaying = true;
+        updateBgmButtons();
+
+        if (customBgmAudio) {
+          customBgmAudio.loop = true;
+          customBgmAudio.volume = state.bgmMuted ? 0 : state.bgmVol;
+          customBgmAudio.play().catch(() => {});
+          return;
+        }
+
+        const ctx = ensureAudioCtx();
+        if (!ctx) return;
+
+        // Festive upbeat C-major pentatonic melody
+        const melody = [523.25, 659.25, 783.99, 659.25, 880.0, 783.99, 659.25, 587.33,
+                        523.25, 587.33, 659.25, 783.99, 1046.5, 880.0, 783.99, 0];
+        const bass = [130.81, 196.0, 146.83, 196.0];
+
+        bgmTimer = setInterval(() => {
+          if (!bgmPlaying || state.bgmMuted || state.bgmVol <= 0.01) return;
+          const now = ctx.currentTime;
+          const freq = melody[bgmStep % melody.length];
+          const bFreq = bass[Math.floor(bgmStep / 4) % bass.length];
+
+          if (freq > 0) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now);
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.exponentialRampToValueAtTime(0.11 * state.bgmVol, now + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.3);
+          }
+
+          if (bgmStep % 2 === 0) {
+            const bOsc = ctx.createOscillator();
+            const bGain = ctx.createGain();
+            bOsc.type = 'sine';
+            bOsc.frequency.setValueAtTime(bFreq, now);
+            bGain.gain.setValueAtTime(0.001, now);
+            bGain.gain.exponentialRampToValueAtTime(0.09 * state.bgmVol, now + 0.02);
+            bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            bOsc.connect(bGain);
+            bGain.connect(ctx.destination);
+            bOsc.start(now);
+            bOsc.stop(now + 0.36);
+          }
+          bgmStep++;
+        }, 280);
+      }
+
+      function stopBgm() {
+        bgmPlaying = false;
+        if (bgmTimer) {
+          clearInterval(bgmTimer);
+          bgmTimer = null;
+        }
+        if (customBgmAudio) {
+          customBgmAudio.pause();
+        }
+        updateBgmButtons();
+      }
+
+      function updateBgmVolume() {
+        if (customBgmAudio) {
+          customBgmAudio.volume = state.bgmMuted ? 0 : state.bgmVol;
+        }
+      }
+
+      function updateBgmButtons() {
+        const quick = document.getElementById('btnBgmQuick');
+        const toggle = document.getElementById('btnToggleBgm');
+        const muteBtn = document.getElementById('btnMuteBgm');
+        if (quick) quick.textContent = bgmPlaying ? (state.bgmMuted ? '🔇 背景音樂：靜音' : '🎵 背景音樂：播放中') : '🎵 背景音樂：關';
+        if (toggle) toggle.textContent = bgmPlaying ? '⏸ 暫停背景音樂' : '▶ 播放背景音樂';
+        if (muteBtn) muteBtn.textContent = state.bgmMuted ? '🔇 已靜音' : '🔊 正常';
+      }
+
+      // Air-blowing & tumbling SFX during 2.5s spin
+      function playSpinAirSfx(durationMs) {
+        if (state.sfxMuted || state.sfxVol <= 0.01) return;
+        const ctx = ensureAudioCtx();
+        if (!ctx) return;
+
+        const dur = durationMs / 1000;
+        const now = ctx.currentTime;
+
+        // Filtered white noise for pneumatic air-jet blower
+        const bufferSize = Math.floor(ctx.sampleRate * dur);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.5;
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(320, now);
+        filter.frequency.exponentialRampToValueAtTime(1250, now + dur * 0.8);
+        filter.frequency.exponentialRampToValueAtTime(480, now + dur);
+        filter.Q.value = 1.6;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.24 * state.sfxVol, now + 0.35);
+        gain.gain.linearRampToValueAtTime(0.28 * state.sfxVol, now + dur * 0.85);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        noise.start(now);
+
+        // Acrylic ball clicking ticks
+        const clicks = Math.floor(14 * state.spinSpeed);
+        for (let i = 0; i < clicks; i++) {
+          const t = now + (i / clicks) * (dur * 0.92);
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(900 + Math.random() * 700, t);
+          g.gain.setValueAtTime(0.07 * state.sfxVol, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.045);
+        }
+      }
+
+      // Reveal Fanfare SFX (Custom or Built-in)
+      function playRevealSfx() {
+        if (state.sfxMuted || state.sfxVol <= 0.01) return;
+        if (customSfxAudio) {
+          customSfxAudio.currentTime = 0;
+          customSfxAudio.volume = state.sfxVol;
+          customSfxAudio.play().catch(() => {});
+          return;
+        }
+        const ctx = ensureAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((f, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = idx === 3 ? 'triangle' : 'sawtooth';
+          const t = now + idx * 0.07;
+          osc.frequency.setValueAtTime(f, t);
+          gain.gain.setValueAtTime(0.001, t);
+          gain.gain.exponentialRampToValueAtTime(0.16 * state.sfxVol, t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + (idx === 3 ? 0.65 : 0.25));
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.7);
+        });
+      }
+
+      function playAlertSfx() {
+        if (state.sfxMuted || state.sfxVol <= 0.01) return;
+        const ctx = ensureAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        [660, 880].forEach((f, i) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now + i * 0.14);
+          g.gain.setValueAtTime(0.15 * state.sfxVol, now + i * 0.14);
+          g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.14);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(now + i * 0.14);
+          osc.stop(now + i * 0.14 + 0.16);
+        });
+      }
+
+      function speakBallNumber(num) {
+        if (!state.voiceEnabled || !('speechSynthesis' in window)) return;
+        try {
+          window.speechSynthesis.cancel();
+          const letter = getBingoLetter(num);
+          const text = letter ? `開出號碼，${letter}，${num} 號` : `開出號碼，第 ${num} 號`;
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = 'zh-TW';
+          utter.volume = state.voiceVol;
+          utter.rate = 1.02;
+          window.speechSynthesis.speak(utter);
+        } catch (e) {
+          // Ignore speech error
+        }
+      }
+
+      function getBingoLetter(num) {
+        if (state.gridSize === 5 && state.maxNum === 75) {
+          if (num <= 15) return 'B';
+          if (num <= 30) return 'I';
+          if (num <= 45) return 'N';
+          if (num <= 60) return 'G';
+          return 'O';
+        }
+        return '';
+      }
+
+      function getBallColorHex(num) {
+        const palette = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#a855f7'];
+        if (state.maxNum === 75) {
+          const band = Math.min(4, Math.floor((num - 1) / 15));
+          return palette[band];
+        }
+        return palette[(num - 1) % palette.length];
+      }
+
+      /* ============================================================
+         5. DUAL 3D ENGINE: TAIWAN LOTTERY AIR-BLOWER CYCLONE
+            - Engine A: Native HTML5 Canvas 3D Perspective (Always ready, 100% offline)
+            - Engine B: Three.js WebGL (Auto-loads via CDN if online & WebGL available)
+      ============================================================ */
+      const stageContainer = document.getElementById('stage3DContainer');
+      let animFrameId = null;
+
+      // Shared Pneumatic Ball Physics State
+      let physicsBalls = [];
+      let airParticles = [];
+      let machinePhase = 'idle'; // 'idle' | 'spinning' | 'extracting'
+      let extractingBallNum = null;
+      let extractProgress = 0;
+
+      // Canvas 2D Engine state
+      let canvas2D = null;
+      let ctx2D = null;
+
+      // Three.js Engine state
+      let tScene = null, tCamera = null, tRenderer = null;
+      let tBallMeshes = new Map();
+      let tAirPoints = null;
+      let tExtractMesh = null;
+      let tChamberGroup = null;
+      let tLedRingMat = null;
+
+      function initPhysicsBalls() {
+        const drawnSet = new Set(state.drawnNumbers);
+        physicsBalls = [];
+        const R = 155; // Chamber radius in virtual units
+        for (let n = 1; n <= state.maxNum; n++) {
+          if (drawnSet.has(n)) continue;
+          const u = Math.random();
+          const v = Math.random();
+          const theta = u * 2 * Math.PI;
+          const phi = Math.acos(2 * v - 1);
+          const rad = R * (0.32 + Math.random() * 0.56);
+          physicsBalls.push({
+            num: n,
+            color: getBallColorHex(n),
+            x: rad * Math.sin(phi) * Math.cos(theta),
+            y: -R * 0.35 + (Math.random() - 0.5) * R * 0.9,
+            z: rad * Math.sin(phi) * Math.sin(theta),
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            vz: (Math.random() - 0.5) * 3,
+            r: 15
+          });
+        }
+
+        airParticles = [];
+        for (let i = 0; i < 65; i++) {
+          airParticles.push({
+            angle: Math.random() * Math.PI * 2,
+            y: (Math.random() * 2 - 1) * 140,
+            radius: 15 + Math.random() * 115,
+            speed: 0.03 + Math.random() * 0.05
+          });
+        }
+      }
+
+      function stepPneumaticPhysics(dt) {
+        const R = 155;
+        const speedMul = state.spinSpeed || 1.0;
+        const isFast = (machinePhase === 'spinning' || machinePhase === 'extracting');
+        const jetPower = (isFast ? 2.75 : 1.08) * speedMul;
+        const swirlPower = (isFast ? 0.14 : 0.045) * speedMul;
+        const gravity = isFast ? 0.22 : 0.30;
+
+        for (let i = 0; i < physicsBalls.length; i++) {
+          const b = physicsBalls[i];
+
+          // If this ball is being sucked into top extraction chimney
+          if (machinePhase === 'extracting' && b.num === extractingBallNum) {
+            extractProgress = Math.min(1, extractProgress + dt * 1.45);
+            b.x += (0 - b.x) * 0.18;
+            b.z += (0 - b.z) * 0.18;
+            b.y = -20 + extractProgress * 235;
+            continue;
+          }
+
+          // Radial distance from central vertical air column
+          const horizDist = Math.sqrt(b.x * b.x + b.z * b.z) + 0.001;
+
+          // 1. Central upward pneumatic air-jet blower (strongest near bottom center)
+          if (horizDist < 72 && b.y < 120) {
+            const centerFactor = 1 - horizDist / 72;
+            b.vy += (0.85 + centerFactor * 1.35) * jetPower * dt * 28;
+            // Slight outward burst near top of jet
+            if (b.y > 45) {
+              b.vx += (b.x / horizDist) * 0.38 * jetPower;
+              b.vz += (b.z / horizDist) * 0.38 * jetPower;
+            }
+          } else {
+            // Pull back toward bottom nozzle intake
+            if (b.y < -45) {
+              b.vx -= (b.x / horizDist) * 0.28 * jetPower;
+              b.vz -= (b.z / horizDist) * 0.28 * jetPower;
+            }
+          }
+
+          // 2. Cyclone tangential swirl
+          const tx = -b.z / horizDist;
+          const tz = b.x / horizDist;
+          b.vx += tx * swirlPower * (isFast ? 26 : 11);
+          b.vz += tz * swirlPower * (isFast ? 26 : 11);
+
+          // 3. Random air turbulence gusts
+          const gust = (isFast ? 1.55 : 0.42) * speedMul;
+          b.vx += (Math.random() - 0.5) * gust;
+          b.vy += (Math.random() - 0.5) * gust;
+          b.vz += (Math.random() - 0.5) * gust;
+
+          // 4. Gravity
+          b.vy -= gravity * dt * 36;
+
+          // 5. Damping (air drag)
+          const drag = isFast ? 0.965 : 0.945;
+          b.vx *= drag;
+          b.vy *= drag;
+          b.vz *= drag;
+
+          // Clamp max velocity
+          const maxV = (isFast ? 18 : 7.5) * speedMul;
+          const vMag = Math.sqrt(b.vx * b.vx + b.vy * b.vy + b.vz * b.vz);
+          if (vMag > maxV) {
+            b.vx = (b.vx / vMag) * maxV;
+            b.vy = (b.vy / vMag) * maxV;
+            b.vz = (b.vz / vMag) * maxV;
+          }
+
+          b.x += b.vx * dt * 60;
+          b.y += b.vy * dt * 60;
+          b.z += b.vz * dt * 60;
+
+          // 6. Spherical acrylic chamber boundary collision
+          const dist3D = Math.sqrt(b.x * b.x + b.y * b.y + b.z * b.z) || 0.001;
+          const maxR = R - b.r - 4;
+          if (dist3D > maxR) {
+            const nx = b.x / dist3D;
+            const ny = b.y / dist3D;
+            const nz = b.z / dist3D;
+            b.x = nx * maxR;
+            b.y = ny * maxR;
+            b.z = nz * maxR;
+            const dot = b.vx * nx + b.vy * ny + b.vz * nz;
+            if (dot > 0) {
+              b.vx -= 1.65 * dot * nx;
+              b.vy -= 1.65 * dot * ny;
+              b.vz -= 1.65 * dot * nz;
+            }
+          }
+        }
+
+        // Update air stream particles
+        for (let i = 0; i < airParticles.length; i++) {
+          const p = airParticles[i];
+          p.angle += p.speed * (isFast ? 3.2 : 1.0) * speedMul;
+          p.y += (isFast ? 6.2 : 2.1) * speedMul;
+          if (p.y > 145) {
+            p.y = -145;
+            p.radius = 12 + Math.random() * 110;
+          }
+        }
+      }
+
+      /* ---------- ENGINE A: PURE HTML5 CANVAS 3D ---------- */
+      function initCanvasEngine() {
+        stageContainer.innerHTML = '';
+        canvas2D = document.createElement('canvas');
+        stageContainer.appendChild(canvas2D);
+        ctx2D = canvas2D.getContext('2d');
+        activeEngine = 'canvas';
+        updateEngineBadge();
+        resizeEngines();
+      }
+
+      function renderCanvasFrame() {
+        if (!ctx2D || !canvas2D) return;
+        const w = canvas2D.width;
+        const h = canvas2D.height;
+        const dpr = window.devicePixelRatio || 1;
+        const cw = w / dpr;
+        const ch = h / dpr;
+
+        ctx2D.save();
+        ctx2D.scale(dpr, dpr);
+        ctx2D.clearRect(0, 0, cw, ch);
+
+        const cx = cw * 0.5;
+        const cy = ch * 0.48;
+        const scale = Math.min(cw, ch) / 480;
+        const globeR = 162 * scale;
+        const fov = 560;
+
+        // 1. Pedestal Base (Taiwan Lottery Machine metallic gold/dark stand)
+        const baseY = cy + globeR * 0.88;
+        const baseGrad = ctx2D.createLinearGradient(cx - 120 * scale, baseY, cx + 120 * scale, baseY);
+        baseGrad.addColorStop(0, '#1f1210');
+        baseGrad.addColorStop(0.28, '#5c3b14');
+        baseGrad.addColorStop(0.5, '#fbbf24');
+        baseGrad.addColorStop(0.72, '#5c3b14');
+        baseGrad.addColorStop(1, '#140a08');
+
+        ctx2D.beginPath();
+        ctx2D.moveTo(cx - 78 * scale, baseY);
+        ctx2D.lineTo(cx + 78 * scale, baseY);
+        ctx2D.lineTo(cx + 118 * scale, baseY + 62 * scale);
+        ctx2D.lineTo(cx - 118 * scale, baseY + 62 * scale);
+        ctx2D.closePath();
+        ctx2D.fillStyle = baseGrad;
+        ctx2D.fill();
+        ctx2D.strokeStyle = 'rgba(254, 240, 138, 0.55)';
+        ctx2D.lineWidth = 1.5;
+        ctx2D.stroke();
+
+        // LED Ring on Pedestal
+        ctx2D.beginPath();
+        ctx2D.ellipse(cx, baseY + 12 * scale, 84 * scale, 14 * scale, 0, 0, Math.PI * 2);
+        const ledColor = machinePhase === 'spinning' ? '#f97316' : (machinePhase === 'extracting' ? '#22c55e' : '#fbbf24');
+        ctx2D.strokeStyle = ledColor;
+        ctx2D.lineWidth = 4 * scale;
+        ctx2D.shadowColor = ledColor;
+        ctx2D.shadowBlur = 16;
+        ctx2D.stroke();
+        ctx2D.shadowBlur = 0;
+
+        // 2. Top Extraction Chimney Tube (透明出球管)
+        const tubeW = 36 * scale;
+        const tubeH = 74 * scale;
+        const tubeTop = cy - globeR - tubeH + 14 * scale;
+        const tubeGrad = ctx2D.createLinearGradient(cx - tubeW / 2, 0, cx + tubeW / 2, 0);
+        tubeGrad.addColorStop(0, 'rgba(255,255,255,0.28)');
+        tubeGrad.addColorStop(0.5, 'rgba(255,255,255,0.06)');
+        tubeGrad.addColorStop(1, 'rgba(255,255,255,0.25)');
+        ctx2D.fillStyle = tubeGrad;
+        ctx2D.strokeStyle = 'rgba(254, 240, 138, 0.55)';
+        ctx2D.lineWidth = 1.5;
+        ctx2D.fillRect(cx - tubeW / 2, tubeTop, tubeW, tubeH);
+        ctx2D.strokeRect(cx - tubeW / 2, tubeTop, tubeW, tubeH);
+
+        // Golden Collar at Chimney base
+        ctx2D.fillStyle = '#d97706';
+        ctx2D.fillRect(cx - tubeW * 0.65, cy - globeR - 4 * scale, tubeW * 1.3, 12 * scale);
+
+        // 3. Back Glass Globe Shell
+        const backGrad = ctx2D.createRadialGradient(cx, cy, globeR * 0.1, cx, cy, globeR);
+        backGrad.addColorStop(0, 'rgba(255, 250, 230, 0.08)');
+        backGrad.addColorStop(0.75, 'rgba(251, 191, 36, 0.07)');
+        backGrad.addColorStop(1, 'rgba(251, 191, 36, 0.24)');
+        ctx2D.beginPath();
+        ctx2D.arc(cx, cy, globeR, 0, Math.PI * 2);
+        ctx2D.fillStyle = backGrad;
+        ctx2D.fill();
+
+        // Bottom Air Nozzle Vent inside Globe
+        ctx2D.beginPath();
+        ctx2D.ellipse(cx, cy + globeR * 0.78, 46 * scale, 11 * scale, 0, 0, Math.PI * 2);
+        ctx2D.fillStyle = 'rgba(251, 191, 36, 0.35)';
+        ctx2D.fill();
+        ctx2D.strokeStyle = '#fde047';
+        ctx2D.lineWidth = 1.5;
+        ctx2D.stroke();
+
+        // 4. Air-Jet Vortex Streaks
+        ctx2D.save();
+        ctx2D.beginPath();
+        ctx2D.arc(cx, cy, globeR - 2, 0, Math.PI * 2);
+        ctx2D.clip();
+        for (let i = 0; i < airParticles.length; i++) {
+          const p = airParticles[i];
+          const px3 = Math.cos(p.angle) * p.radius;
+          const pz3 = Math.sin(p.angle) * p.radius;
+          const persp = fov / (fov + pz3 + 220);
+          const sx = cx + px3 * scale * persp;
+          const sy = cy - p.y * scale * persp;
+          const alpha = (machinePhase === 'spinning' ? 0.55 : 0.25) * persp;
+          ctx2D.fillStyle = `rgba(254, 240, 138, ${alpha.toFixed(2)})`;
+          ctx2D.beginPath();
+          ctx2D.arc(sx, sy, (machinePhase === 'spinning' ? 2.6 : 1.7) * scale * persp, 0, Math.PI * 2);
+          ctx2D.fill();
+        }
+        ctx2D.restore();
+
+        // 5. Project & Z-Sort 3D Balls
+        const projected = physicsBalls.map(b => {
+          const persp = fov / (fov + b.z + 240);
+          return {
+            b,
+            sx: cx + b.x * scale * persp,
+            sy: cy - b.y * scale * persp,
+            sr: b.r * scale * persp * 1.15,
+            depth: b.z
+          };
+        });
+        projected.sort((a, b) => b.depth - a.depth);
+
+        for (let i = 0; i < projected.length; i++) {
+          const item = projected[i];
+          const { b, sx, sy, sr } = item;
+          if (sr < 2) continue;
+
+          // Glossy 3D Sphere Gradient
+          const g = ctx2D.createRadialGradient(sx - sr * 0.32, sy - sr * 0.32, sr * 0.08, sx, sy, sr);
+          g.addColorStop(0, '#ffffff');
+          g.addColorStop(0.28, b.color);
+          g.addColorStop(1, '#1a0a0a');
+
+          ctx2D.beginPath();
+          ctx2D.arc(sx, sy, sr, 0, Math.PI * 2);
+          ctx2D.fillStyle = g;
+          ctx2D.fill();
+
+          // White number circle
+          ctx2D.beginPath();
+          ctx2D.arc(sx, sy, sr * 0.58, 0, Math.PI * 2);
+          ctx2D.fillStyle = 'rgba(255,255,255,0.92)';
+          ctx2D.fill();
+
+          // Number text
+          ctx2D.fillStyle = '#111827';
+          ctx2D.font = `900 ${Math.max(8, Math.round(sr * 0.72))}px sans-serif`;
+          ctx2D.textAlign = 'center';
+          ctx2D.textBaseline = 'middle';
+          ctx2D.fillText(String(b.num), sx, sy + 0.5);
+        }
+
+        // 6. Front Acrylic Glass Reflection & Rim
+        ctx2D.beginPath();
+        ctx2D.arc(cx, cy, globeR, 0, Math.PI * 2);
+        ctx2D.strokeStyle = 'rgba(254, 240, 138, 0.65)';
+        ctx2D.lineWidth = 3 * scale;
+        ctx2D.stroke();
+
+        // Specular curved highlight on glass
+        ctx2D.beginPath();
+        ctx2D.arc(cx, cy, globeR * 0.88, Math.PI * 1.08, Math.PI * 1.42);
+        ctx2D.strokeStyle = 'rgba(255, 255, 255, 0.38)';
+        ctx2D.lineWidth = 7 * scale;
+        ctx2D.lineCap = 'round';
+        ctx2D.stroke();
+
+        ctx2D.restore();
+      }
+
+      /* ---------- ENGINE B: THREE.JS WEBGL ---------- */
+      function createBallTexture(num, hexColor) {
+        const c = document.createElement('canvas');
+        c.width = 128;
+        c.height = 128;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = hexColor;
+        ctx.fillRect(0, 0, 128, 128);
+        // Equator band
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(0, 44, 128, 40);
+        // Two white circles on opposite sides so number is visible from any angle
+        [32, 96].forEach(cx => {
+          ctx.beginPath();
+          ctx.arc(cx, 64, 22, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.fillStyle = '#111827';
+          ctx.font = '900 22px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(num), cx, 65);
+        });
+        const tex = new THREE.CanvasTexture(c);
+        return tex;
+      }
+
+      function initThreeEngine() {
+        if (typeof THREE === 'undefined') return false;
+        try {
+          stageContainer.innerHTML = '';
+          const w = stageContainer.clientWidth || 800;
+          const h = stageContainer.clientHeight || 600;
+
+          tScene = new THREE.Scene();
+          tCamera = new THREE.PerspectiveCamera(42, w / h, 1, 2000);
+          tCamera.position.set(0, 18, 650);
+          tCamera.lookAt(0, 4, 0);
+
+          tRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          tRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+          tRenderer.setSize(w, h);
+          stageContainer.appendChild(tRenderer.domElement);
+
+          // Lights
+          const amb = new THREE.AmbientLight(0xffffff, 0.72);
+          tScene.add(amb);
+          const dir1 = new THREE.DirectionalLight(0xfffbeb, 1.05);
+          dir1.position.set(220, 320, 280);
+          tScene.add(dir1);
+          const dir2 = new THREE.PointLight(0xf59e0b, 1.3, 800);
+          dir2.position.set(-180, -140, 180);
+          tScene.add(dir2);
+
+          tChamberGroup = new THREE.Group();
+          tScene.add(tChamberGroup);
+
+          // Acrylic Globe
+          const globeGeo = new THREE.SphereGeometry(164, 42, 32);
+          const globeMat = new THREE.MeshPhysicalMaterial({
+            color: 0xfff8dc,
+            transparent: true,
+            opacity: 0.16,
+            roughness: 0.08,
+            metalness: 0.1,
+            clearcoat: 1.0,
+            side: THREE.FrontSide,
+            depthWrite: false
+          });
+          const globeMesh = new THREE.Mesh(globeGeo, globeMat);
+          tChamberGroup.add(globeMesh);
+
+          // Golden Equatorial Ring
+          const eqRing = new THREE.Mesh(
+            new THREE.TorusGeometry(165, 2.6, 12, 64),
+            new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.85, roughness: 0.25 })
+          );
+          eqRing.rotation.x = Math.PI / 2;
+          tChamberGroup.add(eqRing);
+
+          // Top Extraction Chimney Tube
+          const tubeMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(20, 20, 86, 24, 1, true),
+            new THREE.MeshStandardMaterial({
+              color: 0xffffff,
+              transparent: true,
+              opacity: 0.28,
+              roughness: 0.1,
+              side: THREE.DoubleSide,
+              depthWrite: false
+            })
+          );
+          tubeMesh.position.y = 198;
+          tChamberGroup.add(tubeMesh);
+
+          const collar = new THREE.Mesh(
+            new THREE.CylinderGeometry(26, 28, 12, 24),
+            new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.85, roughness: 0.22 })
+          );
+          collar.position.y = 160;
+          tChamberGroup.add(collar);
+
+          // Pedestal Base
+          const pedestal = new THREE.Mesh(
+            new THREE.CylinderGeometry(84, 122, 68, 32),
+            new THREE.MeshStandardMaterial({ color: 0x3b1f0c, metalness: 0.72, roughness: 0.35 })
+          );
+          pedestal.position.y = -182;
+          tChamberGroup.add(pedestal);
+
+          tLedRingMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+          const ledRing = new THREE.Mesh(new THREE.TorusGeometry(92, 4, 12, 48), tLedRingMat);
+          ledRing.rotation.x = Math.PI / 2;
+          ledRing.position.y = -156;
+          tChamberGroup.add(ledRing);
+
+          // Air Particles
+          const pGeo = new THREE.BufferGeometry();
+          const pPos = new Float32Array(airParticles.length * 3);
+          pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+          const pMat = new THREE.PointsMaterial({ color: 0xfef08a, size: 4.5, transparent: true, opacity: 0.65 });
+          tAirPoints = new THREE.Points(pGeo, pMat);
+          tChamberGroup.add(tAirPoints);
+
+          rebuildThreeBalls();
+          activeEngine = 'three';
+          updateEngineBadge();
+          return true;
+        } catch (err) {
+          return false;
+        }
+      }
+
+      function rebuildThreeBalls() {
+        if (!tScene || !tChamberGroup) return;
+        tBallMeshes.forEach(mesh => tChamberGroup.remove(mesh));
+        tBallMeshes.clear();
+
+        const ballGeo = new THREE.SphereGeometry(15, 20, 16);
+        for (let i = 0; i < physicsBalls.length; i++) {
+          const b = physicsBalls[i];
+          const tex = createBallTexture(b.num, b.color);
+          const mat = new THREE.MeshStandardMaterial({
+            map: tex,
+            roughness: 0.22,
+            metalness: 0.12
+          });
+          const mesh = new THREE.Mesh(ballGeo, mat);
+          mesh.position.set(b.x, b.y, b.z);
+          tChamberGroup.add(mesh);
+          tBallMeshes.set(b.num, mesh);
+        }
+      }
+
+      function renderThreeFrame() {
+        if (!tRenderer || !tScene || !tCamera) return;
+        for (let i = 0; i < physicsBalls.length; i++) {
+          const b = physicsBalls[i];
+          const mesh = tBallMeshes.get(b.num);
+          if (mesh) {
+            mesh.position.set(b.x, b.y, b.z);
+            mesh.rotation.x += b.vy * 0.025;
+            mesh.rotation.y += (b.vx + 0.6) * 0.025;
+          }
+        }
+        if (tAirPoints) {
+          const pos = tAirPoints.geometry.attributes.position.array;
+          for (let i = 0; i < airParticles.length; i++) {
+            const p = airParticles[i];
+            pos[i * 3] = Math.cos(p.angle) * p.radius;
+            pos[i * 3 + 1] = p.y;
+            pos[i * 3 + 2] = Math.sin(p.angle) * p.radius;
+          }
+          tAirPoints.geometry.attributes.position.needsUpdate = true;
+        }
+        if (tLedRingMat) {
+          tLedRingMat.color.setHex(
+            machinePhase === 'spinning' ? 0xf97316 : (machinePhase === 'extracting' ? 0x22c55e : 0xfbbf24)
+          );
+        }
+        tRenderer.render(tScene, tCamera);
+      }
+
+      function sync3DBalls() {
+        initPhysicsBalls();
+        if (activeEngine === 'three') {
+          rebuildThreeBalls();
+        }
+      }
+
+      function resizeEngines() {
+        const w = stageContainer.clientWidth || 800;
+        const h = stageContainer.clientHeight || 600;
+        if (activeEngine === 'canvas' && canvas2D) {
+          const dpr = window.devicePixelRatio || 1;
+          canvas2D.width = Math.floor(w * dpr);
+          canvas2D.height = Math.floor(h * dpr);
+        } else if (activeEngine === 'three' && tRenderer && tCamera) {
+          tCamera.aspect = w / h;
+          tCamera.updateProjectionMatrix();
+          tRenderer.setSize(w, h);
+        }
+      }
+
+      function updateEngineBadge() {
+        const label = document.getElementById('engineLabel');
+        if (label) {
+          label.textContent = activeEngine === 'three' ? 'Three.js WebGL 3D' : 'Canvas 3D 離線引擎';
+        }
+      }
+
+      // Main animation loop
+      let lastTs = 0;
+      function mainLoop(ts) {
+        animFrameId = requestAnimationFrame(mainLoop);
+        const dt = Math.min(0.05, (ts - lastTs) / 1000 || 0.016);
+        lastTs = ts;
+        stepPneumaticPhysics(dt);
+        if (activeEngine === 'three') {
+          renderThreeFrame();
+        } else {
+          renderCanvasFrame();
+        }
+      }
+
+      // Dynamically try loading Three.js from HTTPS CDN with safe offline fallback
+      function tryLoadThreeJS() {
+        if (state.engineMode === 'canvas') {
+          initCanvasEngine();
+          return;
+        }
+        if (typeof THREE !== 'undefined') {
+          threeLoaded = true;
+          if (!initThreeEngine()) initCanvasEngine();
+          return;
+        }
+        // Start Canvas 3D immediately so there's zero blank screen offline
+        initCanvasEngine();
+
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+        script.async = true;
+        let settled = false;
+        const timer = setTimeout(() => {
+          settled = true;
+        }, 3500);
+
+        script.onload = () => {
+          clearTimeout(timer);
+          if (settled || state.engineMode === 'canvas') return;
+          threeLoaded = true;
+          if (!initThreeEngine()) {
+            initCanvasEngine();
+          }
+        };
+        script.onerror = () => {
+          clearTimeout(timer);
+          // Stay smoothly on Canvas 3D offline engine
+        };
+        document.head.appendChild(script);
+      }
+
+      /* ============================================================
+         6. DRAW LOGIC WITH STRICT QUOTA INTERVENTION & WARNINGS
+      ============================================================ */
+      function getRemainingNumbers() {
+        const drawnSet = new Set(state.drawnNumbers);
+        const rem = [];
+        for (let n = 1; n <= state.maxNum; n++) {
+          if (!drawnSet.has(n)) rem.push(n);
+        }
+        return rem;
+      }
+
+      function handleDrawRequest() {
+        if (isSpinning) return;
+        ensureAudioCtx();
+
+        const remaining = getRemainingNumbers();
+        if (remaining.length === 0) {
+          openAlertModal('🎱 所有號碼已全數開出', '所有球號皆已抽完，請點擊「重置本局開獎」以開始新一輪。', [
+            { text: '知道了', cls: 'primary-btn', action: () => closeModal('modalAlert') }
+          ]);
+          return;
+        }
+
+        const scan = scanCardPool(state.drawnNumbers);
+        const currentWinners = scan.winners.length;
+
+        // Hard Stop if already reached quota
+        if (state.maxWinners > 0 && currentWinners >= state.maxWinners) {
+          playAlertSfx();
+          openAlertModal(
+            '🔒 已達設定中獎門檻・停止抽籤',
+            `目前已有 <strong>${currentWinners} 張</strong> 卡片達標（設定上限為 <strong>${state.maxWinners} 張</strong>）。<br><br>系統已自動鎖定抽籤功能，不再提供抽號，以確保中獎名額不超標。如需繼續，請重置開獎或至分頁二調高名額上限。`,
+            [{ text: '確認', cls: 'primary-btn', action: () => closeModal('modalAlert') }]
+          );
+          renderStageBoard();
+          return;
+        }
+
+        // Strict Intervention Evaluation when maxWinners > 0
+        if (state.maxWinners > 0) {
+          const safeBalls = [];
+          const unsafeBalls = [];
+          let anyCanReachLimit = false;
+
+          for (let i = 0; i < remaining.length; i++) {
+            const candidate = remaining[i];
+            const projectedWinners = countWinnersWithCandidate(candidate);
+            if (projectedWinners <= state.maxWinners) {
+              safeBalls.push({ num: candidate, projectedWinners });
+              if (projectedWinners === state.maxWinners) anyCanReachLimit = true;
+            } else {
+              unsafeBalls.push({ num: candidate, projectedWinners });
+            }
+          }
+
+          // If NO remaining ball is safe (every single remaining ball would exceed maxWinners)
+          if (safeBalls.length === 0) {
+            playAlertSfx();
+            openAlertModal(
+              '🛑 系統強制介入：無法再安全開號',
+              `目前已有 <strong>${currentWinners} / ${state.maxWinners} 張</strong> 中獎卡，但剩餘的 ${remaining.length} 顆號碼無論開出哪一顆，皆會造成總中獎卡數<strong>超過上限 ${state.maxWinners} 張</strong>（多張聽牌卡同時重疊最後一碼）。<br><br>系統已強制介入停止抽籤，絕不超發獎項！`,
+              [{ text: '了解並維持鎖定', cls: 'btn-danger', action: () => closeModal('modalAlert') }]
+            );
+            return;
+          }
+
+          // Pre-Threshold Warning: approaching limit (either 1 away from quota, or next ball can reach/exceed quota)
+          const isApproaching = (currentWinners >= state.maxWinners - 1) || anyCanReachLimit || unsafeBalls.length > 0;
+          if (isApproaching) {
+            playAlertSfx();
+            const safeNote = unsafeBalls.length > 0
+              ? `系統已自動介入演算法，強制排除 <strong>${unsafeBalls.length} 顆</strong> 會導致超額的危險號碼（僅從其餘 ${safeBalls.length} 顆安全球中隨機抽出）。`
+              : `系統將全程監控並嚴格鎖定，確保本輪開獎後總中獎卡數絕不超過 <strong>${state.maxWinners} 張</strong>。`;
+
+            openAlertModal(
+              '⚠️ 即將到達中獎門檻警示',
+              `目前達標中獎卡：<strong>${currentWinners} / ${state.maxWinners} 張</strong>（聽牌中：<strong>${scan.ready.length} 張</strong>）。<br><br>${safeNote}<br><br>請主持人確認現場狀況後，再繼續啟動氣旋搖號：`,
+              [
+                { text: '取消暫停', cls: 'btn-ghost', action: () => closeModal('modalAlert') },
+                {
+                  text: '✅ 確認介入保護並繼續搖號',
+                  cls: 'btn-warn',
+                  action: () => {
+                    closeModal('modalAlert');
+                    const chosen = safeBalls[Math.floor(Math.random() * safeBalls.length)].num;
+                    executeSpinAndReveal(chosen);
+                  }
+                }
+              ]
+            );
+            return;
+          }
+
+          // Normal safe random draw
+          const chosen = safeBalls[Math.floor(Math.random() * safeBalls.length)].num;
+          executeSpinAndReveal(chosen);
+        } else {
+          // Unlimited pure random mode
+          const chosen = remaining[Math.floor(Math.random() * remaining.length)];
+          executeSpinAndReveal(chosen);
+        }
+      }
+
+      function executeSpinAndReveal(chosenNum) {
+        isSpinning = true;
+        machinePhase = 'spinning';
+        extractingBallNum = chosenNum;
+        extractProgress = 0;
+
+        // Hide previous hero reveal
+        const hero = document.getElementById('heroReveal');
+        hero.classList.remove('show');
+        clearTimeout(heroHideTimer);
+
+        const drawBtn = document.getElementById('btnDraw');
+        drawBtn.disabled = true;
+        drawBtn.textContent = '🌪️ 高壓氣旋蓄力中...';
+
+        const spinDuration = 2500; // 2.5s charge-up as requested
+        playSpinAirSfx(spinDuration);
+
+        // Start tube extraction at 1.9s
+        setTimeout(() => {
+          machinePhase = 'extracting';
+        }, 1850);
+
+        // Reveal at 2.5s
+        setTimeout(() => {
+          state.drawnNumbers.push(chosenNum);
+          saveState();
+
+          // Remove ball from chamber
+          physicsBalls = physicsBalls.filter(b => b.num !== chosenNum);
+          if (activeEngine === 'three' && tBallMeshes.has(chosenNum)) {
+            tChamberGroup.remove(tBallMeshes.get(chosenNum));
+            tBallMeshes.delete(chosenNum);
+          }
+
+          machinePhase = 'idle';
+          extractingBallNum = null;
+          isSpinning = false;
+
+          // Show Hero Ball
+          const letter = getBingoLetter(chosenNum);
+          document.getElementById('heroBallLetter').textContent = letter ? `${letter} 欄` : 'LUCKY';
+          document.getElementById('heroBallNum').textContent = String(chosenNum);
+          document.getElementById('heroCaption').textContent = `第 ${state.drawnNumbers.length} 球開出幸運獎號`;
+          hero.classList.add('show');
+
+          playRevealSfx();
+          speakBallNumber(chosenNum);
+          renderStageBoard();
+
+          heroHideTimer = setTimeout(() => {
+            hero.classList.remove('show');
+          }, 3600);
+
+          // Check if we JUST hit the exact threshold -> Hard stop alert immediately!
+          const afterScan = scanCardPool(state.drawnNumbers);
+          if (state.maxWinners > 0 && afterScan.winners.length >= state.maxWinners) {
+            setTimeout(() => {
+              playAlertSfx();
+              const winCodes = afterScan.winners.map(w => w.card.code).join('、');
+              openAlertModal(
+                '🎉 已達中獎名額門檻・自動停止抽籤',
+                `恭喜！本輪開出 <strong>${chosenNum} 號</strong> 後，累計已有 <strong>${afterScan.winners.length} / ${state.maxWinners} 張</strong> 卡片達標連線！<br><br><strong>達標卡號：</strong>${winCodes}<br><br>系統已自動鎖定抽籤功能，不再提供抽籤。請點擊右側卡號進行現場大螢幕驗卡！`,
+                [{ text: '太棒了！前往驗卡', cls: 'primary-btn', action: () => closeModal('modalAlert') }]
+              );
+            }, 900);
+          }
+        }, spinDuration);
+      }
+
+      /* ============================================================
+         7. UI RENDERING (STAGE BOARD, TRACK, PRINT CARDS, VERIFY)
+      ============================================================ */
+      function renderAll() {
+        applyTheme();
+        document.getElementById('eventTitle').textContent = state.eventTitle;
+        syncConfigInputs();
+        updateSmartAdvisor();
+        renderStageBoard();
+        renderPrintCards();
+        restoreTrackPosition();
+        restoreGuideState();
+        updateAudioUi();
+      }
+
+      function applyTheme() {
+        if (state.theme === 'blue') {
+          document.body.classList.add('theme-blue');
+        } else {
+          document.body.classList.remove('theme-blue');
+        }
+      }
+
+      function renderStageBoard() {
+        const scan = scanCardPool(state.drawnNumbers);
+        const winCount = scan.winners.length;
+        const drawnCount = state.drawnNumbers.length;
+
+        // Top HUD
+        document.getElementById('hudDrawnCount').textContent = `${drawnCount} / ${state.maxNum}`;
+        document.getElementById('hudQuotaVal').textContent = state.maxWinners > 0 ? `${winCount} / ${state.maxWinners}` : `${winCount} / 不限`;
+        document.getElementById('hudRuleVal').textContent = `${state.gridSize}×${state.gridSize}・${state.lineThreshold}線`;
+        const guideSum = document.getElementById('guideLiveSummary');
+        if (guideSum) {
+          const limitTxt = state.maxWinners > 0 ? `上限 ${state.maxWinners} 名` : '不限名額';
+          guideSum.textContent = `本局規則：1–${state.maxNum} 號｜${state.gridSize}×${state.gridSize} 盤面｜連成 ${state.lineThreshold} 條線達標｜${limitTxt}`;
+        }
+
+        const quotaPill = document.getElementById('hudQuotaPill');
+        quotaPill.classList.remove('quota-warn', 'quota-full');
+        const reachedLimit = state.maxWinners > 0 && winCount >= state.maxWinners;
+        if (reachedLimit) {
+          quotaPill.classList.add('quota-full');
+        } else if (state.maxWinners > 0 && (winCount >= state.maxWinners - 1 || scan.ready.length > 0)) {
+          quotaPill.classList.add('quota-warn');
+        }
+
+        // Draw button state
+        const drawBtn = document.getElementById('btnDraw');
+        if (!isSpinning) {
+          if (reachedLimit) {
+            drawBtn.disabled = true;
+            drawBtn.classList.add('locked-stop');
+            drawBtn.textContent = `🔒 已達中獎上限 (${winCount}/${state.maxWinners})・停止抽籤`;
+          } else if (drawnCount >= state.maxNum) {
+            drawBtn.disabled = true;
+            drawBtn.classList.add('locked-stop');
+            drawBtn.textContent = '🎱 號碼已全數開完';
+          } else {
+            drawBtn.disabled = false;
+            drawBtn.classList.remove('locked-stop');
+            drawBtn.textContent = '🌪️ 氣旋抽獎 (Space)';
+          }
+        }
+
+        // Latest Ball Box
+        const latestNum = drawnCount > 0 ? state.drawnNumbers[drawnCount - 1] : null;
+        document.getElementById('latestBallBox').textContent = latestNum !== null ? String(latestNum) : '--';
+        document.getElementById('latestBallText').textContent = latestNum !== null
+          ? `第 ${drawnCount} 球：${getBingoLetter(latestNum) ? getBingoLetter(latestNum) + '-' : ''}${latestNum} 號`
+          : '等待開獎...';
+
+        // Draggable Track (show last 8 drawn, newest first)
+        const trackRail = document.getElementById('trackRail');
+        if (drawnCount === 0) {
+          trackRail.innerHTML = '<span class="track-empty">尚未開獎，按下空白鍵或點擊「氣旋抽獎」啟動</span>';
+        } else {
+          const recent = state.drawnNumbers.slice(-8).reverse();
+          trackRail.innerHTML = recent.map((n, idx) =>
+            `<div class="track-ball ${idx === 0 ? 'newest' : ''}">${n}</div>`
+          ).join('');
+        }
+
+        // Drawn History Grid
+        const drawnGrid = document.getElementById('drawnGrid');
+        const list = state.sortMode === 'num'
+          ? [...state.drawnNumbers].sort((a, b) => a - b)
+          : [...state.drawnNumbers];
+        if (list.length === 0) {
+          drawnGrid.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">尚無開獎紀錄</span>';
+        } else {
+          drawnGrid.innerHTML = list.map(n =>
+            `<div class="history-ball ${n === latestNum ? 'latest' : ''}">${n}</div>`
+          ).join('');
+        }
+
+        document.getElementById('sortOrderBtn').classList.toggle('active', state.sortMode === 'order');
+        document.getElementById('sortNumBtn').classList.toggle('active', state.sortMode === 'num');
+
+        // Auto-Matching Board
+        const voidSet = getVoidSet();
+        const voidCount = state.cards.filter(c => voidSet.has(c.id)).length;
+        const activeCount = state.cards.length - voidCount;
+        document.getElementById('poolCountLabel').textContent = voidCount > 0
+          ? `有效 ${activeCount} 張・作廢 ${voidCount} 張`
+          : `有效 ${activeCount} 張`;
+        document.getElementById('winnerCountBadge').textContent = `${winCount} 張`;
+        document.getElementById('readyCountBadge').textContent = `${scan.ready.length} 張`;
+
+        const winnerList = document.getElementById('winnerList');
+        if (winCount === 0) {
+          winnerList.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">尚無達標卡片</span>';
+        } else {
+          winnerList.innerHTML = scan.winners.map(w =>
+            `<button type="button" class="card-chip winner" data-verify-id="${w.card.id}">🎉 ${w.card.code} (${w.lineCount}線)</button>`
+          ).join('');
+        }
+
+        const readyList = document.getElementById('readyList');
+        if (scan.ready.length === 0) {
+          readyList.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">尚無聽牌卡片</span>';
+        } else {
+          // Cap display to first 60 chips to keep 1080p UI super fast
+          const shown = scan.ready.slice(0, 60);
+          readyList.innerHTML = shown.map(r =>
+            `<button type="button" class="card-chip ready" data-verify-id="${r.card.id}">🔥 ${r.card.code} <span class="missing-tag">缺 ${r.missingNumbers.join('/')}</span></button>`
+          ).join('') + (scan.ready.length > 60 ? `<span style="font-size:11px;color:var(--text-muted);padding:4px;">…還有 ${scan.ready.length - 60} 張</span>` : '');
+        }
+      }
+
+      function renderPrintCards() {
+        const container = document.getElementById('cardsPrintGrid');
+        container.className = 'cards-grid-screen print-per-page-' + state.printPerPage;
+        document.getElementById('previewTotalCount').textContent = String(state.cards.length);
+        document.getElementById('printLayoutHint').textContent = `A4 每頁 ${state.printPerPage} 張`;
+
+        const isClassic5 = (state.gridSize === 5 && state.maxNum === 75);
+        const colsStyle = `grid-template-columns: repeat(${state.gridSize}, 1fr);`;
+
+        const htmlParts = [];
+        for (let i = 0; i < state.cards.length; i++) {
+          const c = state.cards[i];
+          const cellsHtml = c.grid.map(v =>
+            `<div class="print-cell ${v === 'FREE' ? 'free' : ''}">${v}</div>`
+          ).join('');
+          htmlParts.push(`
+            <div class="bingo-print-card">
+              <div class="print-card-header">
+                <div class="print-card-title">${escapeHtml(state.eventTitle)}</div>
+                <div class="print-card-id">${c.code}</div>
+              </div>
+              ${isClassic5 ? '<div class="print-bingo-letters"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>' : ''}
+              <div class="print-matrix" style="${colsStyle}">${cellsHtml}</div>
+              <div class="print-card-footer">
+                <span>範圍：1–${state.maxNum}</span>
+                <span>達標門檻：${state.lineThreshold} 條連線</span>
+              </div>
+              <div class="print-card-qr-wrap">
+                <div class="print-qr-note">
+                  📱 員工手機掃碼領取電子卡<br/>
+                  並可於台前掃碼 0.1 秒極速兌獎
+                </div>
+                <div class="print-qr-box" data-card-qr-id="${c.id}"></div>
+              </div>
+            </div>
+          `);
+        }
+        container.innerHTML = htmlParts.join('');
+        renderAllPrintCardQrs();
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      /* ---------- CARD VERIFICATION MODAL ---------- */
+      function extractCardIdFromInput(rawInput) {
+        const str = String(rawInput || '').trim();
+        const urlMatch = str.match(/[?&]c=(\d+)/i);
+        if (urlMatch) return parseInt(urlMatch[1], 10);
+        const tagMatch = str.match(/BINGO-CARD:(\d+)/i);
+        if (tagMatch) return parseInt(tagMatch[1], 10);
+        const cleaned = str.replace(/[^0-9]/g, '');
+        return parseInt(cleaned, 10);
+      }
+
+      function openCardVerifyModal(rawInput) {
+        const numId = extractCardIdFromInput(rawInput);
+        const card = state.cards.find(c => c.id === numId);
+        if (!card) {
+          showToast(`找不到卡號「${rawInput}」，目前有效範圍為 1 ~ ${state.cards.length}`);
+          return;
+        }
+
+        const drawnSet = new Set(state.drawnNumbers);
+        const res = evaluateCard(card, drawnSet, state.gridSize, state.lineThreshold);
+
+        const lineCellSet = new Set();
+        res.completedLines.forEach(line => line.forEach(idx => lineCellSet.add(idx)));
+        const missingSet = new Set(res.missingNumbers);
+
+        const isVoid = getVoidSet().has(card.id);
+        document.getElementById('verifyModalTitle').textContent = isVoid
+          ? `🚫 驗卡結果：${card.code}（已作廢廢牌）`
+          : `🔍 驗卡對獎：${card.code}`;
+        const statusBadge = isVoid
+          ? `<div class="void-banner">🚫 此卡（${card.code}）已設定為「未發出作廢廢牌」，系統已直接排除，不計入本次中獎資格！</div>`
+          : (res.isWinner
+          ? `<span style="color:#4ade80;font-weight:900;">🎉 恭喜達標中獎！（已連成 ${res.lineCount} 條線 / 門檻 ${state.lineThreshold} 條）</span>`
+          : (res.isReady
+            ? `<span style="color:#fb923c;font-weight:900;">🔥 聽牌中！（已連成 ${res.lineCount} 條線，差號碼：${res.missingNumbers.join('、')}）</span>`
+            : `<span style="color:var(--text-muted);">目前連成 ${res.lineCount} 條線（達標門檻 ${state.lineThreshold} 條）</span>`));
+        document.getElementById('verifyModalSummary').innerHTML = statusBadge;
+
+        const matrixEl = document.getElementById('verifyMatrix');
+        matrixEl.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+        matrixEl.innerHTML = card.grid.map((val, idx) => {
+          const isHit = (val === 'FREE') || drawnSet.has(val);
+          const isLineHit = lineCellSet.has(idx);
+          const isMissing = !isHit && missingSet.has(val);
+          let cls = 'verify-cell';
+          if (isLineHit) cls += ' line-hit';
+          else if (isHit) cls += ' hit';
+          else if (isMissing) cls += ' missing-one';
+          return `<div class="${cls}">${val}</div>`;
+        }).join('');
+
+        // Draw glowing SVG lines over completed winning lines
+        const svg = document.getElementById('verifySvgOverlay');
+        const gSize = state.gridSize;
+        const step = 100 / gSize;
+        const linesSvg = res.completedLines.map(line => {
+          const first = line[0];
+          const last = line[line.length - 1];
+          const x1 = (first % gSize) * step + step / 2;
+          const y1 = Math.floor(first / gSize) * step + step / 2;
+          const x2 = (last % gSize) * step + step / 2;
+          const y2 = Math.floor(last / gSize) * step + step / 2;
+          return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fde047" stroke-width="2.6" stroke-linecap="round" opacity="0.92" />`;
+        }).join('');
+        svg.innerHTML = linesSvg;
+
+        document.getElementById('verifyModalFooter').textContent =
+          `黃底＝已開出號碼｜綠底＋金線＝已完成連線｜橘框閃爍＝聽牌所缺號碼`;
+
+        openModal('modalVerify');
+      }
+
+      /* ============================================================
+         8. DRAGGABLE LATEST TRACK
+      ============================================================ */
+      function initDraggableTrack() {
+        const track = document.getElementById('latestTrack');
+        const handle = document.getElementById('trackDragHandle');
+        const stageLeft = document.getElementById('stageLeft');
+        let dragging = false;
+        let offsetX = 0, offsetY = 0;
+
+        handle.addEventListener('pointerdown', (e) => {
+          if (e.target.id === 'btnResetTrackPos') return;
+          dragging = true;
+          handle.setPointerCapture(e.pointerId);
+          const rect = track.getBoundingClientRect();
+          offsetX = e.clientX - rect.left;
+          offsetY = e.clientY - rect.top;
+        });
+
+        handle.addEventListener('pointermove', (e) => {
+          if (!dragging) return;
+          const parentRect = stageLeft.getBoundingClientRect();
+          let left = e.clientX - parentRect.left - offsetX;
+          let top = e.clientY - parentRect.top - offsetY;
+          left = Math.max(8, Math.min(parentRect.width - track.offsetWidth - 8, left));
+          top = Math.max(8, Math.min(parentRect.height - track.offsetHeight - 8, top));
+          track.style.left = left + 'px';
+          track.style.top = top + 'px';
+          track.style.bottom = 'auto';
+        });
+
+        handle.addEventListener('pointerup', (e) => {
+          if (!dragging) return;
+          dragging = false;
+          handle.releasePointerCapture(e.pointerId);
+          state.trackPos = {
+            left: track.style.left,
+            top: track.style.top
+          };
+          saveState();
+        });
+
+        document.getElementById('btnResetTrackPos').addEventListener('click', () => {
+          state.trackPos = null;
+          track.style.left = '24px';
+          track.style.top = 'auto';
+          track.style.bottom = '98px';
+          saveState();
+          showToast('展示軌位置已重置');
+        });
+      }
+
+      function restoreTrackPosition() {
+        const track = document.getElementById('latestTrack');
+        if (state.trackPos && state.trackPos.left && state.trackPos.top) {
+          track.style.left = state.trackPos.left;
+          track.style.top = state.trackPos.top;
+          track.style.bottom = 'auto';
+        }
+      }
+
+      function initDraggableGuide() {
+        const panel = document.getElementById('gameGuidePanel');
+        const handle = document.getElementById('guideDragHandle');
+        let dragging = false;
+        let offsetX = 0, offsetY = 0;
+
+        handle.addEventListener('pointerdown', (e) => {
+          if (e.target.closest('button')) return;
+          dragging = true;
+          handle.setPointerCapture(e.pointerId);
+          const rect = panel.getBoundingClientRect();
+          offsetX = e.clientX - rect.left;
+          offsetY = e.clientY - rect.top;
+        });
+
+        handle.addEventListener('pointermove', (e) => {
+          if (!dragging) return;
+          let left = e.clientX - offsetX;
+          let top = e.clientY - offsetY;
+          left = Math.max(8, Math.min(window.innerWidth - panel.offsetWidth - 8, left));
+          top = Math.max(8, Math.min(window.innerHeight - panel.offsetHeight - 8, top));
+          panel.style.left = left + 'px';
+          panel.style.top = top + 'px';
+          panel.style.right = 'auto';
+        });
+
+        handle.addEventListener('pointerup', (e) => {
+          if (!dragging) return;
+          dragging = false;
+          handle.releasePointerCapture(e.pointerId);
+          state.guidePos = { left: panel.style.left, top: panel.style.top };
+          saveState();
+        });
+
+        document.getElementById('btnResetGuidePos').addEventListener('click', () => {
+          state.guidePos = null;
+          panel.style.left = 'auto';
+          panel.style.right = 'calc(35vw + 18px)';
+          panel.style.top = '94px';
+          saveState();
+          showToast('遊戲說明區塊位置已重置');
+        });
+
+        const setGuideVisibility = (visible) => {
+          state.guideVisible = visible;
+          panel.classList.toggle('hidden', !visible);
+          const toggleBtn = document.getElementById('btnToggleGuide');
+          if (toggleBtn) toggleBtn.classList.toggle('active', visible);
+          saveState();
+        };
+
+        document.getElementById('btnHideGuide').addEventListener('click', () => setGuideVisibility(false));
+        document.getElementById('btnToggleGuide').addEventListener('click', () => setGuideVisibility(!state.guideVisible));
+      }
+
+      function restoreGuideState() {
+        const panel = document.getElementById('gameGuidePanel');
+        const toggleBtn = document.getElementById('btnToggleGuide');
+        const visible = state.guideVisible !== false;
+        panel.classList.toggle('hidden', !visible);
+        if (toggleBtn) toggleBtn.classList.toggle('active', visible);
+        if (state.guidePos && state.guidePos.left && state.guidePos.top) {
+          panel.style.left = state.guidePos.left;
+          panel.style.top = state.guidePos.top;
+          panel.style.right = 'auto';
+        }
+      }
+
+      /* ============================================================
+         9. MODALS & UI EVENT BINDINGS
+      ============================================================ */
+      function openModal(id) {
+        document.getElementById(id).classList.add('open');
+      }
+
+      function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+      }
+
+      function openAlertModal(title, htmlBody, buttons) {
+        document.getElementById('alertModalTitle').textContent = title;
+        document.getElementById('alertModalBody').innerHTML = htmlBody;
+        const actionsEl = document.getElementById('alertModalActions');
+        actionsEl.innerHTML = '';
+        buttons.forEach(b => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = b.cls || 'btn-ghost';
+          btn.textContent = b.text;
+          btn.addEventListener('click', b.action);
+          actionsEl.appendChild(btn);
+        });
+        openModal('modalAlert');
+      }
+
+      function syncConfigInputs() {
+        document.getElementById('cfgRangePreset').value = state.rangePreset;
+        document.getElementById('cfgMaxNum').value = state.maxNum;
+        document.getElementById('cfgGridSize').value = String(state.gridSize);
+        document.getElementById('cfgTotalCards').value = state.totalCards;
+        document.getElementById('cfgLineThreshold').value = state.lineThreshold;
+        document.getElementById('cfgMaxWinners').value = state.maxWinners;
+        document.getElementById('cfgPrintPerPage').value = String(state.printPerPage);
+      }
+
+      function updateAudioUi() {
+        document.getElementById('setSpinSpeed').value = state.spinSpeed;
+        document.getElementById('setSpinSpeedVal').textContent = Number(state.spinSpeed).toFixed(1) + 'x';
+        document.getElementById('setEngineMode').value = state.engineMode;
+
+        document.getElementById('setBgmVol').value = state.bgmVol;
+        document.getElementById('setBgmVolVal').textContent = Math.round(state.bgmVol * 100) + '%';
+        document.getElementById('setSfxVol').value = state.sfxVol;
+        document.getElementById('setSfxVolVal').textContent = Math.round(state.sfxVol * 100) + '%';
+        document.getElementById('btnMuteSfx').textContent = state.sfxMuted ? '🔇 已靜音' : '🔊 正常';
+
+        document.getElementById('setVoiceVol').value = state.voiceVol;
+        document.getElementById('setVoiceVolVal').textContent = Math.round(state.voiceVol * 100) + '%';
+        const vBtn = document.getElementById('btnToggleVoice');
+        vBtn.textContent = state.voiceEnabled ? '🗣️ 報號：開' : '🔇 報號：關';
+        vBtn.classList.toggle('active', state.voiceEnabled);
+
+        updateBgmButtons();
+      }
+
+      function bindEvents() {
+        // Tab Switching
+        document.getElementById('tabBtnStage').addEventListener('click', () => {
+          document.getElementById('viewStage').classList.remove('hidden');
+          document.getElementById('viewCards').classList.add('hidden');
+          document.getElementById('tabBtnStage').classList.add('active');
+          document.getElementById('tabBtnCards').classList.remove('active');
+          document.body.classList.remove('tab-cards-active');
+          setTimeout(resizeEngines, 50);
+        });
+
+        document.getElementById('tabBtnCards').addEventListener('click', () => {
+          document.getElementById('viewStage').classList.add('hidden');
+          document.getElementById('viewCards').classList.remove('hidden');
+          document.getElementById('tabBtnCards').classList.add('active');
+          document.getElementById('tabBtnStage').classList.remove('active');
+          document.body.classList.add('tab-cards-active');
+          renderPrintCards();
+        });
+
+        // Editable Main Event Title
+        const titleEl = document.getElementById('eventTitle');
+        titleEl.addEventListener('input', () => {
+          const val = titleEl.textContent.trim();
+          state.eventTitle = val || '賓果抽獎活動';
+          saveState();
+          // Sync to visible print cards if rendered
+          document.querySelectorAll('.print-card-title').forEach(el => {
+            el.textContent = state.eventTitle;
+          });
+        });
+        titleEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            titleEl.blur();
+          }
+        });
+
+        // Theme toggle
+        document.getElementById('btnTheme').addEventListener('click', () => {
+          state.theme = state.theme === 'red' ? 'blue' : 'red';
+          applyTheme();
+          saveState();
+          showToast(state.theme === 'blue' ? '已切換：深藍金科技風' : '已切換：深紅金喜慶風');
+        });
+
+        // Draw button & Space shortcut
+        document.getElementById('btnDraw').addEventListener('click', handleDrawRequest);
+
+        window.addEventListener('keydown', (e) => {
+          if (e.code !== 'Space') return;
+          const active = document.activeElement;
+          const isEditing = active && (
+            active.isContentEditable ||
+            active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.tagName === 'SELECT'
+          );
+          if (isEditing) return;
+          if (document.getElementById('viewStage').classList.contains('hidden')) return;
+          if (document.querySelector('.modal-backdrop.open')) return;
+          e.preventDefault();
+          handleDrawRequest();
+        });
+
+        // Reset Draw
+        document.getElementById('btnResetDraw').addEventListener('click', () => {
+          openAlertModal(
+            '🔄 確認重置本局開獎紀錄？',
+            '此操作將清空所有已開出號碼，並將所有球重新放回 3D 氣旋球槽中（<strong>保留現有紙卡卡池</strong>）。',
+            [
+              { text: '取消', cls: 'btn-ghost', action: () => closeModal('modalAlert') },
+              {
+                text: '確認重置',
+                cls: 'btn-danger',
+                action: () => {
+                  state.drawnNumbers = [];
+                  saveState();
+                  document.getElementById('heroReveal').classList.remove('show');
+                  sync3DBalls();
+                  renderStageBoard();
+                  closeModal('modalAlert');
+                  showToast('已重置本局開獎紀錄');
+                }
+              }
+            ]
+          );
+        });
+
+        // Sort Drawn Numbers
+        document.getElementById('sortOrderBtn').addEventListener('click', () => {
+          state.sortMode = 'order';
+          saveState();
+          renderStageBoard();
+        });
+        document.getElementById('sortNumBtn').addEventListener('click', () => {
+          state.sortMode = 'num';
+          saveState();
+          renderStageBoard();
+        });
+
+        // Quick Verify Card
+        document.getElementById('btnVerifyCard').addEventListener('click', () => {
+          openCardVerifyModal(document.getElementById('verifyCardInput').value);
+        });
+        document.getElementById('verifyCardInput').addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            openCardVerifyModal(e.target.value);
+          }
+        });
+
+        // Click on Winner / Ready Card Chips (event delegation)
+        document.getElementById('winnerList').addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-verify-id]');
+          if (btn) openCardVerifyModal(btn.dataset.verifyId);
+        });
+        document.getElementById('readyList').addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-verify-id]');
+          if (btn) openCardVerifyModal(btn.dataset.verifyId);
+        });
+
+        // Tab 2 Config Inputs
+        document.getElementById('cfgRangePreset').addEventListener('change', (e) => {
+          const v = e.target.value;
+          if (v !== 'custom') {
+            document.getElementById('cfgMaxNum').value = v;
+          }
+          updateSmartAdvisor();
+        });
+        ['cfgMaxNum', 'cfgGridSize', 'cfgTotalCards', 'cfgLineThreshold', 'cfgMaxWinners'].forEach(id => {
+          document.getElementById(id).addEventListener('input', updateSmartAdvisor);
+        });
+        document.getElementById('cfgPrintPerPage').addEventListener('change', (e) => {
+          state.printPerPage = parseInt(e.target.value, 10) || 4;
+          saveState();
+          renderPrintCards();
+        });
+
+        // Preset buttons in Smart Advisor
+        document.querySelectorAll('[data-preset]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const p = btn.dataset.preset;
+            if (p === 'standard') {
+              document.getElementById('cfgRangePreset').value = '75';
+              document.getElementById('cfgMaxNum').value = 75;
+              document.getElementById('cfgGridSize').value = '5';
+              document.getElementById('cfgTotalCards').value = 100;
+              document.getElementById('cfgLineThreshold').value = 3;
+              document.getElementById('cfgMaxWinners').value = 5;
+            } else if (p === 'fast') {
+              document.getElementById('cfgRangePreset').value = '25';
+              document.getElementById('cfgMaxNum').value = 25;
+              document.getElementById('cfgGridSize').value = '3';
+              document.getElementById('cfgTotalCards').value = 30;
+              document.getElementById('cfgLineThreshold').value = 2;
+              document.getElementById('cfgMaxWinners').value = 3;
+            } else if (p === 'grand') {
+              document.getElementById('cfgRangePreset').value = '75';
+              document.getElementById('cfgMaxNum').value = 75;
+              document.getElementById('cfgGridSize').value = '5';
+              document.getElementById('cfgTotalCards').value = 300;
+              document.getElementById('cfgLineThreshold').value = 5;
+              document.getElementById('cfgMaxWinners').value = 10;
+            }
+            updateSmartAdvisor();
+            showToast('已套用建議參數，請點擊「生成新卡池」生效');
+          });
+        });
+
+        // Generate Cards Button
+        document.getElementById('btnGenerateCards').addEventListener('click', () => {
+          const gridSize = parseInt(document.getElementById('cfgGridSize').value, 10) || 5;
+          const minNeeded = gridSize === 5 ? 24 : 9;
+          const maxNum = Math.max(minNeeded, Math.min(99, parseInt(document.getElementById('cfgMaxNum').value, 10) || 75));
+          const totalCards = Math.max(1, Math.min(500, parseInt(document.getElementById('cfgTotalCards').value, 10) || 100));
+          const maxLines = gridSize === 5 ? 12 : 8;
+          const lineThreshold = Math.max(1, Math.min(maxLines, parseInt(document.getElementById('cfgLineThreshold').value, 10) || 3));
+          const maxWinners = Math.max(0, Math.min(totalCards, parseInt(document.getElementById('cfgMaxWinners').value, 10) || 0));
+
+          state.rangePreset = document.getElementById('cfgRangePreset').value;
+          state.maxNum = maxNum;
+          state.gridSize = gridSize;
+          state.totalCards = totalCards;
+          state.lineThreshold = lineThreshold;
+          state.maxWinners = maxWinners;
+          state.printPerPage = parseInt(document.getElementById('cfgPrintPerPage').value, 10) || 4;
+
+          generateCardPool(false);
+        });
+
+        // Print Buttons
+        const doPrint = () => {
+          document.getElementById('viewStage').classList.add('hidden');
+          document.getElementById('viewCards').classList.remove('hidden');
+          renderPrintCards();
+          setTimeout(() => window.print(), 120);
+        };
+        document.getElementById('btnPrintCards').addEventListener('click', doPrint);
+        document.getElementById('btnPrintCardsTop').addEventListener('click', doPrint);
+
+        // JSON Export / Import
+        document.getElementById('btnExportJson').addEventListener('click', () => {
+          const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `bingo_backup_${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('已匯出系統備份檔 (.json)');
+        });
+
+        document.getElementById('btnImportJson').addEventListener('click', () => {
+          document.getElementById('importJsonInput').click();
+        });
+
+        document.getElementById('importJsonInput').addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const data = JSON.parse(reader.result);
+              if (!Array.isArray(data.cards)) throw new Error('格式無效');
+              state = Object.assign({}, DEFAULT_STATE, data);
+              saveState();
+              sync3DBalls();
+              renderAll();
+              showToast(`成功匯入備份檔！（共 ${state.cards.length} 張卡片，已開 ${state.drawnNumbers.length} 球）`);
+            } catch (err) {
+              showToast('匯入失敗：請確認為有效的賓果備份 JSON 檔案');
+            }
+          };
+          reader.readAsText(file);
+          e.target.value = '';
+        });
+
+        // Settings Modal
+        document.getElementById('btnSettings').addEventListener('click', () => {
+          updateAudioUi();
+          openModal('modalSettings');
+        });
+
+        document.getElementById('setSpinSpeed').addEventListener('input', (e) => {
+          state.spinSpeed = parseFloat(e.target.value);
+          document.getElementById('setSpinSpeedVal').textContent = state.spinSpeed.toFixed(1) + 'x';
+          saveState();
+        });
+
+        document.getElementById('setEngineMode').addEventListener('change', (e) => {
+          state.engineMode = e.target.value;
+          saveState();
+          if (state.engineMode === 'canvas') {
+            initCanvasEngine();
+          } else {
+            tryLoadThreeJS();
+          }
+        });
+
+        // BGM controls
+        const toggleBgm = () => {
+          ensureAudioCtx();
+          if (bgmPlaying) stopBgm();
+          else startDefaultBgmLoop();
+        };
+        document.getElementById('btnBgmQuick').addEventListener('click', toggleBgm);
+        document.getElementById('btnToggleBgm').addEventListener('click', toggleBgm);
+        document.getElementById('btnMuteBgm').addEventListener('click', () => {
+          state.bgmMuted = !state.bgmMuted;
+          updateBgmVolume();
+          saveState();
+          updateBgmButtons();
+        });
+        document.getElementById('setBgmVol').addEventListener('input', (e) => {
+          state.bgmVol = parseFloat(e.target.value);
+          document.getElementById('setBgmVolVal').textContent = Math.round(state.bgmVol * 100) + '%';
+          updateBgmVolume();
+          saveState();
+        });
+        document.getElementById('btnImportBgm').addEventListener('click', () => {
+          document.getElementById('inputBgmFile').click();
+        });
+        document.getElementById('inputBgmFile').addEventListener('change', (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          const url = URL.createObjectURL(f);
+          if (customBgmAudio) customBgmAudio.pause();
+          customBgmAudio = new Audio(url);
+          customBgmName = f.name;
+          document.getElementById('bgmSourceLabel').textContent = `目前音源：${customBgmName}`;
+          if (bgmPlaying) startDefaultBgmLoop();
+          showToast(`已匯入背景音樂：${customBgmName}`);
+          e.target.value = '';
+        });
+        document.getElementById('btnResetBgm').addEventListener('click', () => {
+          if (customBgmAudio) {
+            customBgmAudio.pause();
+            customBgmAudio = null;
+          }
+          customBgmName = '';
+          document.getElementById('bgmSourceLabel').textContent = '目前音源：內建喜慶合成背景樂';
+          if (bgmPlaying) startDefaultBgmLoop();
+          showToast('已還原預設背景音樂');
+        });
+
+        // SFX controls
+        document.getElementById('btnTestSfx').addEventListener('click', () => {
+          ensureAudioCtx();
+          playRevealSfx();
+        });
+        document.getElementById('btnMuteSfx').addEventListener('click', () => {
+          state.sfxMuted = !state.sfxMuted;
+          saveState();
+          updateAudioUi();
+        });
+        document.getElementById('setSfxVol').addEventListener('input', (e) => {
+          state.sfxVol = parseFloat(e.target.value);
+          document.getElementById('setSfxVolVal').textContent = Math.round(state.sfxVol * 100) + '%';
+          saveState();
+        });
+        document.getElementById('btnImportSfx').addEventListener('click', () => {
+          document.getElementById('inputSfxFile').click();
+        });
+        document.getElementById('inputSfxFile').addEventListener('change', (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          const url = URL.createObjectURL(f);
+          customSfxAudio = new Audio(url);
+          customSfxName = f.name;
+          document.getElementById('sfxSourceLabel').textContent = `目前音源：${customSfxName}`;
+          showToast(`已匯入中獎音效：${customSfxName}`);
+          e.target.value = '';
+        });
+        document.getElementById('btnResetSfx').addEventListener('click', () => {
+          customSfxAudio = null;
+          customSfxName = '';
+          document.getElementById('sfxSourceLabel').textContent = '目前音源：內建氣流＋中獎號角音效';
+          showToast('已還原預設抽獎音效');
+        });
+
+        // Voice controls
+        document.getElementById('btnToggleVoice').addEventListener('click', () => {
+          state.voiceEnabled = !state.voiceEnabled;
+          saveState();
+          updateAudioUi();
+        });
+        document.getElementById('btnTestVoice').addEventListener('click', () => {
+          speakBallNumber(28);
+        });
+        document.getElementById('setVoiceVol').addEventListener('input', (e) => {
+          state.voiceVol = parseFloat(e.target.value);
+          document.getElementById('setVoiceVolVal').textContent = Math.round(state.voiceVol * 100) + '%';
+          saveState();
+        });
+
+        // Void Cards Manager Modal Logic
+        function parseIdList(str) {
+          const ids = new Set();
+          const parts = String(str || '').split(/[,，、\s]+/).filter(Boolean);
+          for (const part of parts) {
+            const rangeMatch = part.match(/^(\d+)\s*[-~～至]\s*(\d+)$/);
+            if (rangeMatch) {
+              const a = Math.min(parseInt(rangeMatch[1], 10), parseInt(rangeMatch[2], 10));
+              const b = Math.max(parseInt(rangeMatch[1], 10), parseInt(rangeMatch[2], 10));
+              for (let k = a; k <= b; k++) {
+                if (k >= 1 && k <= state.cards.length) ids.add(k);
+              }
+            } else {
+              const cleaned = part.replace(/[^0-9]/g, '');
+              const num = parseInt(cleaned, 10);
+              if (num >= 1 && num <= state.cards.length) ids.add(num);
+            }
+          }
+          return Array.from(ids);
+        }
+
+        function renderVoidModalGrid() {
+          const voidSet = getVoidSet();
+          const voidCount = state.cards.filter(c => voidSet.has(c.id)).length;
+          const activeCount = state.cards.length - voidCount;
+          document.getElementById('voidStatsLabel').textContent =
+            `有效參賽卡：${activeCount} 張｜已作廢廢牌：${voidCount} 張（總計 ${state.cards.length} 張）`;
+
+          const gridEl = document.getElementById('voidCardGrid');
+          gridEl.innerHTML = state.cards.map(c => {
+            const isV = voidSet.has(c.id);
+            return `<button type="button" class="void-card-btn ${isV ? 'is-void' : ''}" data-void-toggle="${c.id}">${c.code}</button>`;
+          }).join('');
+        }
+
+        function openVoidManager() {
+          renderVoidModalGrid();
+          openModal('modalVoidCards');
+        }
+
+        document.getElementById('btnOpenVoidModal').addEventListener('click', openVoidManager);
+        document.getElementById('btnOpenVoidModalTab2').addEventListener('click', openVoidManager);
+
+        document.getElementById('voidCardGrid').addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-void-toggle]');
+          if (!btn) return;
+          const id = parseInt(btn.dataset.voidToggle, 10);
+          const voidSet = getVoidSet();
+          if (voidSet.has(id)) voidSet.delete(id);
+          else voidSet.add(id);
+          state.voidCardIds = Array.from(voidSet).sort((a, b) => a - b);
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+        });
+
+        document.getElementById('btnApplyVoidCutoff').addEventListener('click', () => {
+          const cutoff = parseInt(document.getElementById('voidCutoffInput').value, 10);
+          if (isNaN(cutoff) || cutoff < 0 || cutoff > state.cards.length) {
+            showToast(`請輸入有效卡號（0 ~ ${state.cards.length}）`);
+            return;
+          }
+          const voidIds = [];
+          for (let i = cutoff + 1; i <= state.cards.length; i++) {
+            voidIds.push(i);
+          }
+          state.voidCardIds = voidIds;
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+          showToast(`已設定 1–${cutoff} 號有效，後方 ${voidIds.length} 張未發出卡片全數作廢排除`);
+        });
+
+        document.getElementById('btnAddVoidRange').addEventListener('click', () => {
+          const ids = parseIdList(document.getElementById('voidRangeInput').value);
+          if (ids.length === 0) {
+            showToast('請輸入有效的卡號或區間（例如 5, 12, 83-100）');
+            return;
+          }
+          const voidSet = getVoidSet();
+          ids.forEach(id => voidSet.add(id));
+          state.voidCardIds = Array.from(voidSet).sort((a, b) => a - b);
+          document.getElementById('voidRangeInput').value = '';
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+          showToast(`已將 ${ids.length} 張卡片加入作廢排除`);
+        });
+
+        document.getElementById('btnRestoreVoidRange').addEventListener('click', () => {
+          const ids = parseIdList(document.getElementById('voidRangeInput').value);
+          if (ids.length === 0) {
+            showToast('請輸入欲恢復的卡號或區間');
+            return;
+          }
+          const voidSet = getVoidSet();
+          ids.forEach(id => voidSet.delete(id));
+          state.voidCardIds = Array.from(voidSet).sort((a, b) => a - b);
+          document.getElementById('voidRangeInput').value = '';
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+          showToast(`已將 ${ids.length} 張卡片恢復為有效參賽卡`);
+        });
+
+        document.getElementById('btnClearAllVoid').addEventListener('click', () => {
+          state.voidCardIds = [];
+          saveState();
+          renderVoidModalGrid();
+          renderStageBoard();
+          showToast('已將全部卡片恢復為有效狀態');
+        });
+
+        // Modal Close Buttons & Backdrop Click
+        document.querySelectorAll('[data-close]').forEach(btn => {
+          btn.addEventListener('click', () => closeModal(btn.dataset.close));
+        });
+        document.querySelectorAll('.modal-backdrop').forEach(bg => {
+          bg.addEventListener('click', (e) => {
+            if (e.target === bg) bg.classList.remove('open');
+          });
+        });
+
+        window.addEventListener('resize', resizeEngines);
+      }
+
+      /* ============================================================
+         9.5 QR CODE GENERATOR, GITHUB PAGES MOBILE MODE & SCANNER
+      ============================================================ */
+      let qrLibReady = false;
+      const MOBILE_STORAGE_KEY = 'cyclone_bingo_mobile_card_v1';
+      let mobileState = {
+        cardId: null,
+        gridSize: 5,
+        lineThreshold: 3,
+        grid: [],
+        marked: [],
+        syncedDrawn: [],
+        eventTitle: ''
+      };
+
+      function loadQrLibrary(callback) {
+        if (typeof window.qrcode === 'function') {
+          qrLibReady = true;
+          if (callback) callback();
+          return;
+        }
+        const sc = document.createElement('script');
+        sc.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
+        sc.async = true;
+        sc.onload = () => {
+          qrLibReady = (typeof window.qrcode === 'function');
+          if (callback) callback();
+        };
+        sc.onerror = () => {
+          qrLibReady = false;
+          if (callback) callback();
+        };
+        document.head.appendChild(sc);
+      }
+
+      function renderQrIntoElement(el, text) {
+        if (!el) return;
+        if (typeof window.qrcode === 'function') {
+          try {
+            const qr = window.qrcode(0, 'L');
+            qr.addData(text);
+            qr.make();
+            el.innerHTML = qr.createSvgTag({ scalable: true, margin: 1 });
+            return;
+          } catch (e) {
+            // Fall through to offline fallback badge
+          }
+        }
+        // Offline fallback visual badge if CDN is unreachable
+        const cardMatch = text.match(/[?&]c=(\d+)/) || text.match(/BINGO-CARD:(\d+)/);
+        const label = cardMatch ? ('No.' + String(cardMatch[1]).padStart(3, '0')) : 'QR';
+        el.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #111827;font-family:monospace;font-size:10px;font-weight:900;color:#111827;text-align:center;line-height:1.1;"><span>QR</span><span>${label}</span></div>`;
+      }
+
+      function encodeNumbersB64(nums) {
+        const bytes = nums.map(n => (n === 'FREE' ? 0 : (parseInt(n, 10) & 0xff)));
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
+
+      function decodeNumbersB64(str) {
+        try {
+          const pad = str.replace(/-/g, '+').replace(/_/g, '/');
+          const bin = atob(pad);
+          const out = [];
+          for (let i = 0; i < bin.length; i++) {
+            const v = bin.charCodeAt(i);
+            out.push(v === 0 ? 'FREE' : v);
+          }
+          return out;
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function getBaseShareUrl() {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+          return window.location.origin + window.location.pathname;
+        }
+        return 'https://YOUR-GITHUB-USER.github.io/YOUR-REPO/';
+      }
+
+      function buildCardQrPayload(card) {
+        const encodedGrid = encodeNumbersB64(card.grid);
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+          return `${getBaseShareUrl()}?m=1&c=${card.id}&g=${state.gridSize}&t=${state.lineThreshold}&k=${encodedGrid}`;
+        }
+        return `BINGO-CARD:${card.id}`;
+      }
+
+      function buildStageSyncUrl() {
+        const drawnEnc = encodeNumbersB64(state.drawnNumbers);
+        const titleEnc = encodeURIComponent(state.eventTitle.slice(0, 28));
+        return `${getBaseShareUrl()}?m=sync&s=${drawnEnc}&t=${state.lineThreshold}&g=${state.gridSize}&n=${titleEnc}`;
+      }
+
+      function renderAllPrintCardQrs() {
+        const boxes = document.querySelectorAll('[data-card-qr-id]');
+        if (!boxes.length) return;
+        const doRender = () => {
+          boxes.forEach(box => {
+            const id = parseInt(box.dataset.cardQrId, 10);
+            const card = state.cards.find(c => c.id === id);
+            if (card) {
+              renderQrIntoElement(box, buildCardQrPayload(card));
+            }
+          });
+        };
+        if (typeof window.qrcode === 'function') {
+          doRender();
+        } else {
+          doRender();
+          loadQrLibrary(doRender);
+        }
+      }
+
+      /* ---------- MOBILE EMPLOYEE REDEMPTION MODE ---------- */
+      function loadMobileState() {
+        try {
+          const raw = localStorage.getItem(MOBILE_STORAGE_KEY);
+          if (raw) return Object.assign({}, mobileState, JSON.parse(raw));
+        } catch (e) {}
+        return mobileState;
+      }
+
+      function saveMobileState() {
+        try {
+          localStorage.setItem(MOBILE_STORAGE_KEY, JSON.stringify(mobileState));
+        } catch (e) {}
+      }
+
+      function enterMobileMode() {
+        document.body.classList.add('mobile-mode-active');
+        document.getElementById('viewMobile').classList.remove('hidden');
+        renderMobileView();
+      }
+
+      function exitMobileMode() {
+        document.body.classList.remove('mobile-mode-active');
+        document.getElementById('viewMobile').classList.add('hidden');
+        setTimeout(resizeEngines, 50);
+      }
+
+      function renderMobileView() {
+        document.getElementById('mobileEventTitle').textContent = mobileState.eventTitle || state.eventTitle;
+        const badge = document.getElementById('mobileCardBadge');
+        const statusEl = document.getElementById('mobileStatusBar');
+        const gridEl = document.getElementById('mobileCardGrid');
+        const redeemSec = document.getElementById('mobileRedeemSection');
+
+        if (!mobileState.cardId) {
+          badge.textContent = '尚未綁定卡號';
+          statusEl.className = 'mobile-status-bar';
+          statusEl.textContent = '請掃描紙卡 QR Code，或在上方輸入你的紙卡編號綁定';
+          gridEl.innerHTML = '';
+          redeemSec.style.display = 'none';
+          return;
+        }
+
+        const code = padCardCode(mobileState.cardId, state.totalCards || 100);
+        badge.textContent = `我的卡號：${code}`;
+        document.getElementById('mobileCardInput').value = String(mobileState.cardId);
+
+        // Show Redemption QR so staff can scan employee phone at stage
+        redeemSec.style.display = 'block';
+        const redeemPayload = `BINGO-CARD:${mobileState.cardId}`;
+        const qrBox = document.getElementById('mobileRedeemQrBox');
+        if (typeof window.qrcode === 'function') {
+          renderQrIntoElement(qrBox, redeemPayload);
+        } else {
+          renderQrIntoElement(qrBox, redeemPayload);
+          loadQrLibrary(() => renderQrIntoElement(qrBox, redeemPayload));
+        }
+
+        if (!mobileState.grid || mobileState.grid.length === 0) {
+          statusEl.className = 'mobile-status-bar';
+          statusEl.innerHTML = `已綁定 <strong>${code}</strong>！請出示下方兌獎 QR 給工作人員掃碼核對，或掃描紙卡上的 QR 載入完整盤面。`;
+          gridEl.innerHTML = '';
+          return;
+        }
+
+        const gSize = mobileState.gridSize || 5;
+        const threshold = mobileState.lineThreshold || 3;
+        const markedSet = new Set([...(mobileState.marked || []), ...(mobileState.syncedDrawn || [])]);
+        const tempCard = { id: mobileState.cardId, code, grid: mobileState.grid };
+        const evalRes = evaluateCard(tempCard, markedSet, gSize, threshold);
+        const lineCells = new Set();
+        evalRes.completedLines.forEach(l => l.forEach(i => lineCells.add(i)));
+
+        if (evalRes.isWinner) {
+          statusEl.className = 'mobile-status-bar win';
+          statusEl.innerHTML = `🎉 恭喜達標中獎！（已連成 ${evalRes.lineCount} 條線 / 門檻 ${threshold} 條）請立即出示下方核銷 QR 兌獎！`;
+        } else if (evalRes.isReady) {
+          statusEl.className = 'mobile-status-bar';
+          statusEl.innerHTML = `🔥 聽牌中！已連成 ${evalRes.lineCount} 條線，只差號碼：<strong>${evalRes.missingNumbers.join('、')}</strong>`;
+        } else {
+          statusEl.className = 'mobile-status-bar';
+          statusEl.textContent = `目前連成 ${evalRes.lineCount} 條線（達標門檻 ${threshold} 條｜已標記 ${markedSet.size} 球）`;
+        }
+
+        gridEl.style.gridTemplateColumns = `repeat(${gSize}, 1fr)`;
+        gridEl.innerHTML = mobileState.grid.map((val, idx) => {
+          const isHit = (val === 'FREE') || markedSet.has(val);
+          const isLine = lineCells.has(idx);
+          let cls = 'mobile-cell';
+          if (isLine) cls += ' line-win';
+          else if (isHit) cls += ' marked';
+          return `<button type="button" class="${cls}" data-mval="${val}">${val}</button>`;
+        }).join('');
+      }
+
+      function checkUrlParamsForMobileMode() {
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('m');
+        if (!mode) return false;
+
+        mobileState = loadMobileState();
+        const titleParam = params.get('n');
+        if (titleParam) mobileState.eventTitle = decodeURIComponent(titleParam);
+
+        const gParam = parseInt(params.get('g'), 10);
+        if (gParam === 3 || gParam === 5) mobileState.gridSize = gParam;
+        const tParam = parseInt(params.get('t'), 10);
+        if (tParam >= 1 && tParam <= 12) mobileState.lineThreshold = tParam;
+
+        if (mode === '1') {
+          const cid = parseInt(params.get('c'), 10);
+          const k = params.get('k');
+          if (cid >= 1) mobileState.cardId = cid;
+          if (k) {
+            const decoded = decodeNumbersB64(k);
+            if (decoded.length === 25 || decoded.length === 9) {
+              mobileState.grid = decoded;
+            }
+          }
+          saveMobileState();
+          enterMobileMode();
+          return true;
+        }
+
+        if (mode === 'sync') {
+          const sParam = params.get('s');
+          if (sParam !== null) {
+            mobileState.syncedDrawn = decodeNumbersB64(sParam).filter(v => typeof v === 'number');
+          }
+          saveMobileState();
+          enterMobileMode();
+          showToast(`已同步大螢幕最新開獎進度（共 ${mobileState.syncedDrawn.length} 球）`);
+          return true;
+        }
+        return false;
+      }
+
+      /* ---------- HOST CAMERA QR SCANNER ---------- */
+      let camStream = null;
+      let camScanRaf = null;
+
+      function stopCameraScanner() {
+        if (camScanRaf) {
+          cancelAnimationFrame(camScanRaf);
+          camScanRaf = null;
+        }
+        if (camStream) {
+          camStream.getTracks().forEach(t => t.stop());
+          camStream = null;
+        }
+        const vid = document.getElementById('camScanVideo');
+        if (vid) vid.srcObject = null;
+        closeModal('modalCamScan');
+      }
+
+      async function startCameraScanner() {
+        openModal('modalCamScan');
+        const statusEl = document.getElementById('camScanStatus');
+        const video = document.getElementById('camScanVideo');
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          statusEl.textContent = '目前瀏覽器不支援攝影機存取（請使用 HTTPS / GitHub Pages，或直接接 USB 掃碼槍於輸入框掃描）';
+          return;
+        }
+
+        try {
+          statusEl.textContent = '正在啟動攝影機...';
+          camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          video.srcObject = camStream;
+          await video.play();
+
+          if (!('BarcodeDetector' in window)) {
+            statusEl.textContent = '攝影機已啟動，但此瀏覽器未內建原生 QR 解碼器。建議使用 Chrome / Edge，或直接使用 USB 掃碼槍掃描！';
+            return;
+          }
+
+          const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          statusEl.textContent = '✅ 鏡頭就緒！請將紙卡或手機兌獎 QR 對準畫面...';
+
+          const scanLoop = async () => {
+            if (!camStream) return;
+            try {
+              const codes = await detector.detect(video);
+              if (codes && codes.length > 0) {
+                const raw = codes[0].rawValue || '';
+                const id = extractCardIdFromInput(raw);
+                if (!isNaN(id) && id >= 1) {
+                  stopCameraScanner();
+                  document.getElementById('verifyCardInput').value = String(id);
+                  openCardVerifyModal(id);
+                  return;
+                }
+              }
+            } catch (e) {}
+            camScanRaf = requestAnimationFrame(scanLoop);
+          };
+          camScanRaf = requestAnimationFrame(scanLoop);
+        } catch (err) {
+          statusEl.textContent = '無法開啟攝影機（可能未授權或無鏡頭），可直接接 USB 掃碼槍或手動輸入卡號驗卡。';
+        }
+      }
+
+      function bindMobileAndQrEvents() {
+        // Big screen Sync QR modal
+        document.getElementById('btnShowSyncQr').addEventListener('click', () => {
+          const url = buildStageSyncUrl();
+          document.getElementById('syncQrDrawnCount').textContent = String(state.drawnNumbers.length);
+          document.getElementById('syncQrUrlHint').textContent = url;
+          const box = document.getElementById('syncQrCanvasBox');
+          if (typeof window.qrcode === 'function') {
+            renderQrIntoElement(box, url);
+          } else {
+            renderQrIntoElement(box, url);
+            loadQrLibrary(() => renderQrIntoElement(box, url));
+          }
+          openModal('modalSyncQr');
+        });
+
+        document.getElementById('btnCopySyncUrl').addEventListener('click', () => {
+          const url = buildStageSyncUrl();
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => showToast('已複製手機對獎連結')).catch(() => fallbackCopy(url));
+          } else {
+            fallbackCopy(url);
+          }
+        });
+
+        function fallbackCopy(text) {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); showToast('已複製手機對獎連結'); } catch (e) {}
+          document.body.removeChild(ta);
+        }
+
+        document.getElementById('btnPreviewMobile').addEventListener('click', () => {
+          closeModal('modalSyncQr');
+          mobileState = loadMobileState();
+          mobileState.eventTitle = state.eventTitle;
+          mobileState.gridSize = state.gridSize;
+          mobileState.lineThreshold = state.lineThreshold;
+          mobileState.syncedDrawn = [...state.drawnNumbers];
+          if (!mobileState.cardId && state.cards.length > 0) {
+            mobileState.cardId = state.cards[0].id;
+            mobileState.grid = [...state.cards[0].grid];
+          }
+          saveMobileState();
+          enterMobileMode();
+        });
+
+        // Camera scanner button
+        document.getElementById('btnCamScan').addEventListener('click', startCameraScanner);
+        document.getElementById('btnCloseCamScan').addEventListener('click', stopCameraScanner);
+
+        // Mobile view controls
+        document.getElementById('btnMobileBindCard').addEventListener('click', () => {
+          const id = extractCardIdFromInput(document.getElementById('mobileCardInput').value);
+          if (isNaN(id) || id < 1) {
+            showToast('請輸入有效卡號（例如 15）');
+            return;
+          }
+          mobileState.cardId = id;
+          // If same browser has full card pool, auto-load grid too
+          const localMatch = state.cards.find(c => c.id === id);
+          if (localMatch) {
+            mobileState.grid = [...localMatch.grid];
+            mobileState.gridSize = state.gridSize;
+            mobileState.lineThreshold = state.lineThreshold;
+          } else {
+            mobileState.grid = [];
+          }
+          saveMobileState();
+          renderMobileView();
+          showToast(`已綁定卡號 No.${String(id).padStart(3, '0')}`);
+        });
+
+        document.getElementById('mobileCardGrid').addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-mval]');
+          if (!btn) return;
+          const raw = btn.dataset.mval;
+          if (raw === 'FREE') return;
+          const num = parseInt(raw, 10);
+          const set = new Set(mobileState.marked || []);
+          if (set.has(num)) set.delete(num);
+          else set.add(num);
+          mobileState.marked = Array.from(set);
+          saveMobileState();
+          renderMobileView();
+        });
+
+        document.getElementById('btnMobileClearMarks').addEventListener('click', () => {
+          mobileState.marked = [];
+          saveMobileState();
+          renderMobileView();
+          showToast('已清除手動標記');
+        });
+
+        document.getElementById('btnExitMobileMode').addEventListener('click', exitMobileMode);
+      }
+
+      /* ============================================================
+         10. BOOTSTRAP
+      ============================================================ */
+      window.addEventListener('DOMContentLoaded', () => {
+        if (!Array.isArray(state.cards) || state.cards.length === 0) {
+          generateCardPool(true);
+        } else {
+          initPhysicsBalls();
+        }
+        bindEvents();
+        bindMobileAndQrEvents();
+        initDraggableTrack();
+        initDraggableGuide();
+        loadQrLibrary(() => {
+          renderAllPrintCardQrs();
+        });
+        renderAll();
+        checkUrlParamsForMobileMode();
+        tryLoadThreeJS();
+        animFrameId = requestAnimationFrame(mainLoop);
+      });
+    })();
+  </script>
+</body>
+</html>
