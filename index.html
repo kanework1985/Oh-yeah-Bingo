@@ -1434,6 +1434,312 @@
       text-align: center;
     }
 
+    /* Print Card QR Code */
+    .print-card-qr-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 2px;
+      padding-top: 6px;
+      border-top: 1px dashed #9ca3af;
+    }
+
+    .print-qr-box {
+      width: 58px;
+      height: 58px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      padding: 2px;
+    }
+
+    .print-qr-box img, .print-qr-box canvas, .print-qr-box svg {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    .print-qr-note {
+      font-size: 10px;
+      line-height: 1.35;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    /* Big Screen QR Share Modal */
+    .qr-display-box {
+      width: 240px;
+      height: 240px;
+      margin: 12px auto;
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 14px;
+      border: 3px solid var(--gold-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .qr-display-box img, .qr-display-box canvas, .qr-display-box svg {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* Camera Scanner Video */
+    .scanner-video-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 10px auto;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid var(--gold-main);
+      background: #000;
+      aspect-ratio: 4 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scanner-video-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Mobile Employee Redemption View */
+    #viewMobile {
+      position: relative;
+      z-index: 30;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px 16px 60px;
+      min-height: 100vh;
+    }
+
+    #viewMobile.hidden {
+      display: none !important;
+    }
+
+    .mobile-card-shell {
+      background: var(--panel-bg);
+      border: 2px solid var(--gold-main);
+      border-radius: 20px;
+      padding: 18px 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.65);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .mobile-header {
+      text-align: center;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 10px;
+    }
+
+    .mobile-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--gold-light);
+    }
+
+    .mobile-badge {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #fde047 0%, #f59e0b 100%);
+      color: #290b02;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .mobile-status-bar {
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--panel-border);
+    }
+
+    .mobile-status-bar.win {
+      background: linear-gradient(135deg, rgba(22, 163, 74, 0.85) 0%, rgba(21, 128, 61, 0.9) 100%);
+      border-color: #86efac;
+      color: #ffffff;
+      animation: pulseBorder 1.5s infinite;
+    }
+
+    .mobile-grid {
+      display: grid;
+      gap: 7px;
+    }
+
+    .mobile-cell {
+      aspect-ratio: 1 / 1;
+      border-radius: 11px;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.18);
+      color: var(--text-main);
+      font-size: 22px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.12s, background 0.15s;
+    }
+
+    .mobile-cell:active {
+      transform: scale(0.94);
+    }
+
+    .mobile-cell.marked {
+      background: linear-gradient(135deg, #fde047 0%, #f59e0b 100%);
+      border-color: #fffbeb;
+      color: #450a0a;
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.65);
+    }
+
+    .mobile-cell.line-win {
+      background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%);
+      border-color: #dcfce7;
+      color: #052e16;
+      box-shadow: 0 0 14px rgba(34, 197, 94, 0.75);
+    }
+
+    .mobile-cell.missing-one {
+      border-color: #fb923c;
+      background: rgba(249, 115, 22, 0.28);
+      animation: pulseBorder 1.3s infinite;
+    }
+
+    .mobile-grid-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .mobile-svg-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .mobile-synced-strip {
+      background: rgba(0, 0, 0, 0.42);
+      border: 1px solid rgba(251, 191, 36, 0.28);
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mobile-synced-balls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      max-height: 76px;
+      overflow-y: auto;
+    }
+
+    .mobile-mini-ball {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fffbeb 0%, #fde047 50%, #f59e0b 100%);
+      color: #450a0a;
+      font-size: 11px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Full-Screen Celebratory Winner Overlay on Employee Phone */
+    .mobile-win-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      background: radial-gradient(circle at 50% 30%, rgba(180, 83, 9, 0.96) 0%, rgba(69, 10, 10, 0.98) 65%, rgba(15, 3, 6, 0.99) 100%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      overflow-y: auto;
+    }
+
+    .mobile-win-overlay.open {
+      display: flex;
+      animation: fadeInWin 0.35s ease;
+    }
+
+    @keyframes fadeInWin {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .win-trophy {
+      font-size: 68px;
+      line-height: 1;
+      filter: drop-shadow(0 0 24px rgba(254, 240, 138, 0.9));
+      animation: bounceTrophy 1.4s ease-in-out infinite;
+    }
+
+    @keyframes bounceTrophy {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.06); }
+    }
+
+    .win-headline {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      background: linear-gradient(180deg, #ffffff 0%, #fde047 55%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-top: 8px;
+    }
+
+    .win-card-pill {
+      margin-top: 10px;
+      padding: 6px 22px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.55);
+      border: 2px solid #fde047;
+      color: #fef08a;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    body.mobile-mode-active {
+      overflow-y: auto;
+      height: auto;
+    }
+
+    body.mobile-mode-active .top-bar,
+    body.mobile-mode-active #viewStage,
+    body.mobile-mode-active #viewCards,
+    body.mobile-mode-active #gameGuidePanel {
+      display: none !important;
+    }
+
     /* Settings Modal Controls */
     .setting-group {
       background: rgba(0, 0, 0, 0.35);
@@ -1589,6 +1895,7 @@
       .preview-toolbar,
       .modal-backdrop,
       .guide-float,
+      #viewMobile,
       #toastBox {
         display: none !important;
       }
@@ -1730,6 +2037,7 @@
       <div class="stage-controls">
         <button id="btnDraw" class="draw-btn" type="button">🌪️ 氣旋抽獎 (Space)</button>
         <button id="btnBgmQuick" class="sub-ctrl-btn" type="button">🎵 背景音樂：關</button>
+        <button id="btnShowSyncQr" class="sub-ctrl-btn" type="button" title="顯示大螢幕 QR Code 讓員工手機掃碼對獎與快速兌獎">📲 手機兌獎 QR</button>
         <button id="btnResetDraw" class="sub-ctrl-btn" type="button">🔄 重置本局開獎</button>
       </div>
     </section>
@@ -1789,7 +2097,8 @@
           <span class="board-card-title">🔍 現場快速驗卡查詢</span>
         </div>
         <div class="verify-row">
-          <input id="verifyCardInput" class="verify-input" type="text" placeholder="輸入卡號（例如 15 或 No.015）" />
+          <input id="verifyCardInput" class="verify-input" type="text" placeholder="輸入卡號或掃碼槍掃描（如 15）" />
+          <button id="btnCamScan" class="sub-ctrl-btn" type="button" style="padding:0 12px;" title="開啟鏡頭掃描員工紙卡或手機兌獎 QR">📷 掃碼</button>
           <button id="btnVerifyCard" class="verify-btn" type="button">立即對獎</button>
         </div>
       </div>
@@ -2120,6 +2429,112 @@
       </div>
     </div>
   </aside>
+
+  <!-- ================= MOBILE EMPLOYEE REDEMPTION VIEW (GitHub Pages QR) ================= -->
+  <section id="viewMobile" class="hidden" aria-label="員工手機快速對獎與兌獎">
+    <div class="mobile-card-shell">
+      <div class="mobile-header">
+        <div class="mobile-title" id="mobileEventTitle">2027 年度尾牙賓果抽獎盛典</div>
+        <div class="mobile-badge" id="mobileCardBadge">尚未綁定卡號</div>
+      </div>
+
+      <!-- Enter or switch card number -->
+      <div class="verify-row">
+        <input id="mobileCardInput" class="verify-input" type="text" placeholder="輸入你的卡號（如 15）" />
+        <button id="btnMobileBindCard" class="verify-btn" type="button">綁定卡號</button>
+      </div>
+
+      <div class="mobile-status-bar" id="mobileStatusBar">
+        請掃描紙卡 QR Code 或輸入卡號以開啟電子對獎卡
+      </div>
+
+      <!-- Synced Drawn Numbers Strip -->
+      <div class="mobile-synced-strip" id="mobileSyncedStrip" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;color:var(--gold-light);">
+          <span>🎱 已同步舞台開獎號碼</span>
+          <span id="mobileSyncedCount">0 球</span>
+        </div>
+        <div class="mobile-synced-balls" id="mobileSyncedBalls"></div>
+      </div>
+
+      <!-- Interactive 5x5 / 3x3 Grid with Glowing SVG Winning Lines -->
+      <div class="mobile-grid-wrap">
+        <div class="mobile-grid" id="mobileCardGrid"></div>
+        <svg class="mobile-svg-overlay" id="mobileSvgOverlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button id="btnMobileScanQr" class="primary-btn" type="button" style="width:auto;padding:9px 16px;font-size:13px;">📷 掃描紙卡 / 同步大螢幕獎號</button>
+        <button id="btnMobileShowWinScreen" class="btn-warn" type="button" style="display:none;padding:9px 16px;font-size:13px;">🏆 開啟全螢幕中獎憑證</button>
+      </div>
+
+      <div style="font-size:12px;color:var(--text-muted);text-align:center;line-height:1.5;">
+        💡 黃底＝已對中號碼｜綠底＋金線＝已完成連線｜橘框閃爍＝聽牌只差這 1 碼！
+      </div>
+
+      <!-- Employee Redemption Pass QR (For Staff to Scan at Stage) -->
+      <div id="mobileRedeemSection" style="text-align:center;border-top:1px solid var(--panel-border);padding-top:12px;display:none;">
+        <div style="font-size:14px;font-weight:900;color:var(--gold-light);margin-bottom:4px;">🎟️ 員工快速兌獎核銷 QR Code</div>
+        <div style="font-size:12px;color:var(--text-muted);">中獎時請直接出示此畫面給台前工作人員掃碼核對</div>
+        <div class="qr-display-box" id="mobileRedeemQrBox" style="width:190px;height:190px;"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button id="btnMobileClearMarks" class="btn-ghost" type="button" style="font-size:12px;">清除手動標記</button>
+        <button id="btnExitMobileMode" class="btn-ghost" type="button" style="font-size:12px;">🖥️ 切換回主控台模式</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Full-Screen Celebratory Winner Screen on Mobile -->
+  <div id="mobileWinOverlay" class="mobile-win-overlay" role="dialog" aria-label="恭喜中獎兌獎憑證">
+    <div class="win-trophy">🏆</div>
+    <div class="win-headline">BINGO！恭喜中獎！</div>
+    <div class="win-card-pill" id="winOverlayCardCode">No.001</div>
+    <div id="winOverlayDetail" style="font-size:15px;color:#fef3c7;margin-top:8px;font-weight:700;">已達標連成 3 條線！</div>
+    <div class="qr-display-box" id="winOverlayQrBox" style="width:210px;height:210px;margin:16px auto;"></div>
+    <div style="font-size:13px;color:#fde68a;max-width:320px;line-height:1.5;margin-bottom:16px;">
+      請將此畫面直接出示給台前工作人員，掃描上方核銷 QR Code 即可 0.1 秒完成大螢幕驗卡領獎！
+    </div>
+    <button id="btnCloseWinOverlay" class="primary-btn" type="button" style="width:auto;padding:10px 28px;">檢視我的對獎盤面</button>
+  </div>
+
+  <!-- ================= MODAL: BIG SCREEN SYNC QR FOR EMPLOYEES ================= -->
+  <div class="modal-backdrop" id="modalSyncQr">
+    <div class="modal-box" style="max-width:500px;text-align:center;">
+      <div class="modal-header">
+        <h3 class="modal-title">📲 員工手機掃碼對獎與快速兌獎</h3>
+        <button type="button" class="modal-close" data-close="modalSyncQr">✕</button>
+      </div>
+      <div style="font-size:13px;color:#fef3c7;line-height:1.6;">
+        員工用手機掃描下方 QR Code，即可開啟 <strong>GitHub Pages 手機兌獎頁</strong>並<strong>自動同步目前所有已開出號碼</strong>（共 <strong id="syncQrDrawnCount">0</strong> 球），系統將立即自動對獎並產生兌獎核銷碼！
+      </div>
+      <div class="qr-display-box" id="syncQrCanvasBox"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;word-break:break-all;" id="syncQrUrlHint"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button id="btnCopySyncUrl" class="preset-btn" type="button" style="padding:8px 14px;font-size:12px;">📋 複製手機對獎連結</button>
+        <button id="btnPreviewMobile" class="preset-btn" type="button" style="padding:8px 14px;font-size:12px;">📱 預覽員工手機畫面</button>
+        <button type="button" class="primary-btn" style="width:auto;padding:8px 20px;font-size:13px;" data-close="modalSyncQr">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CAMERA QR SCANNER FOR HOST ================= -->
+  <div class="modal-backdrop" id="modalCamScan">
+    <div class="modal-box" style="max-width:480px;text-align:center;">
+      <div class="modal-header">
+        <h3 class="modal-title">📷 現場鏡頭掃碼極速驗卡</h3>
+        <button type="button" class="modal-close" id="btnCloseCamScan">✕</button>
+      </div>
+      <div style="font-size:13px;color:#fef3c7;margin-bottom:6px;">
+        請將員工的<strong>紙卡 QR Code</strong> 或<strong>手機兌獎核銷碼</strong>對準鏡頭（亦支援直接插上 USB 掃碼槍於輸入框掃描）
+      </div>
+      <div class="scanner-video-wrap">
+        <video id="camScanVideo" playsinline muted></video>
+      </div>
+      <div id="camScanStatus" style="font-size:13px;font-weight:700;color:var(--gold-light);margin-top:8px;">正在啟動攝影機...</div>
+    </div>
+  </div>
 
   <div id="toastBox"></div>
 
@@ -3629,10 +4044,18 @@
                 <span>範圍：1–${state.maxNum}</span>
                 <span>達標門檻：${state.lineThreshold} 條連線</span>
               </div>
+              <div class="print-card-qr-wrap">
+                <div class="print-qr-note">
+                  📱 員工手機掃碼領取電子卡<br/>
+                  並可於台前掃碼 0.1 秒極速兌獎
+                </div>
+                <div class="print-qr-box" data-card-qr-id="${c.id}"></div>
+              </div>
             </div>
           `);
         }
         container.innerHTML = htmlParts.join('');
+        renderAllPrintCardQrs();
       }
 
       function escapeHtml(str) {
@@ -3644,9 +4067,18 @@
       }
 
       /* ---------- CARD VERIFICATION MODAL ---------- */
+      function extractCardIdFromInput(rawInput) {
+        const str = String(rawInput || '').trim();
+        const urlMatch = str.match(/[?&]c=(\d+)/i);
+        if (urlMatch) return parseInt(urlMatch[1], 10);
+        const tagMatch = str.match(/BINGO-CARD:(\d+)/i);
+        if (tagMatch) return parseInt(tagMatch[1], 10);
+        const cleaned = str.replace(/[^0-9]/g, '');
+        return parseInt(cleaned, 10);
+      }
+
       function openCardVerifyModal(rawInput) {
-        const cleaned = String(rawInput).replace(/[^0-9]/g, '');
-        const numId = parseInt(cleaned, 10);
+        const numId = extractCardIdFromInput(rawInput);
         const card = state.cards.find(c => c.id === numId);
         if (!card) {
           showToast(`找不到卡號「${rawInput}」，目前有效範圍為 1 ~ ${state.cards.length}`);
@@ -4377,6 +4809,517 @@
       }
 
       /* ============================================================
+         9.5 QR CODE GENERATOR, GITHUB PAGES MOBILE MODE & SCANNER
+      ============================================================ */
+      let qrLibReady = false;
+      const MOBILE_STORAGE_KEY = 'cyclone_bingo_mobile_card_v1';
+      let mobileState = {
+        cardId: null,
+        gridSize: 5,
+        lineThreshold: 3,
+        grid: [],
+        marked: [],
+        syncedDrawn: [],
+        eventTitle: ''
+      };
+
+      function loadQrLibrary(callback) {
+        if (typeof window.qrcode === 'function') {
+          qrLibReady = true;
+          if (callback) callback();
+          return;
+        }
+        const sc = document.createElement('script');
+        sc.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
+        sc.async = true;
+        sc.onload = () => {
+          qrLibReady = (typeof window.qrcode === 'function');
+          if (callback) callback();
+        };
+        sc.onerror = () => {
+          qrLibReady = false;
+          if (callback) callback();
+        };
+        document.head.appendChild(sc);
+      }
+
+      function renderQrIntoElement(el, text) {
+        if (!el) return;
+        if (typeof window.qrcode === 'function') {
+          try {
+            const qr = window.qrcode(0, 'L');
+            qr.addData(text);
+            qr.make();
+            el.innerHTML = qr.createSvgTag({ scalable: true, margin: 1 });
+            return;
+          } catch (e) {
+            // Fall through to offline fallback badge
+          }
+        }
+        // Offline fallback visual badge if CDN is unreachable
+        const cardMatch = text.match(/[?&]c=(\d+)/) || text.match(/BINGO-CARD:(\d+)/);
+        const label = cardMatch ? ('No.' + String(cardMatch[1]).padStart(3, '0')) : 'QR';
+        el.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #111827;font-family:monospace;font-size:10px;font-weight:900;color:#111827;text-align:center;line-height:1.1;"><span>QR</span><span>${label}</span></div>`;
+      }
+
+      function encodeNumbersB64(nums) {
+        const bytes = nums.map(n => (n === 'FREE' ? 0 : (parseInt(n, 10) & 0xff)));
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
+
+      function decodeNumbersB64(str) {
+        try {
+          const pad = str.replace(/-/g, '+').replace(/_/g, '/');
+          const bin = atob(pad);
+          const out = [];
+          for (let i = 0; i < bin.length; i++) {
+            const v = bin.charCodeAt(i);
+            out.push(v === 0 ? 'FREE' : v);
+          }
+          return out;
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function getBaseShareUrl() {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+          return window.location.origin + window.location.pathname;
+        }
+        return 'https://YOUR-GITHUB-USER.github.io/YOUR-REPO/';
+      }
+
+      function buildCardQrPayload(card) {
+        const encodedGrid = encodeNumbersB64(card.grid);
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+          return `${getBaseShareUrl()}?m=1&c=${card.id}&g=${state.gridSize}&t=${state.lineThreshold}&k=${encodedGrid}`;
+        }
+        return `BINGO-CARD:${card.id}`;
+      }
+
+      function buildStageSyncUrl() {
+        const drawnEnc = encodeNumbersB64(state.drawnNumbers);
+        const titleEnc = encodeURIComponent(state.eventTitle.slice(0, 28));
+        return `${getBaseShareUrl()}?m=sync&s=${drawnEnc}&t=${state.lineThreshold}&g=${state.gridSize}&n=${titleEnc}`;
+      }
+
+      function renderAllPrintCardQrs() {
+        const boxes = document.querySelectorAll('[data-card-qr-id]');
+        if (!boxes.length) return;
+        const doRender = () => {
+          boxes.forEach(box => {
+            const id = parseInt(box.dataset.cardQrId, 10);
+            const card = state.cards.find(c => c.id === id);
+            if (card) {
+              renderQrIntoElement(box, buildCardQrPayload(card));
+            }
+          });
+        };
+        if (typeof window.qrcode === 'function') {
+          doRender();
+        } else {
+          doRender();
+          loadQrLibrary(doRender);
+        }
+      }
+
+      /* ---------- MOBILE EMPLOYEE REDEMPTION MODE ---------- */
+      function loadMobileState() {
+        try {
+          const raw = localStorage.getItem(MOBILE_STORAGE_KEY);
+          if (raw) return Object.assign({}, mobileState, JSON.parse(raw));
+        } catch (e) {}
+        return mobileState;
+      }
+
+      function saveMobileState() {
+        try {
+          localStorage.setItem(MOBILE_STORAGE_KEY, JSON.stringify(mobileState));
+        } catch (e) {}
+      }
+
+      function enterMobileMode() {
+        document.body.classList.add('mobile-mode-active');
+        document.getElementById('viewMobile').classList.remove('hidden');
+        renderMobileView();
+      }
+
+      function exitMobileMode() {
+        document.body.classList.remove('mobile-mode-active');
+        document.getElementById('viewMobile').classList.add('hidden');
+        setTimeout(resizeEngines, 50);
+      }
+
+      function renderMobileView() {
+        document.getElementById('mobileEventTitle').textContent = mobileState.eventTitle || state.eventTitle;
+        const badge = document.getElementById('mobileCardBadge');
+        const statusEl = document.getElementById('mobileStatusBar');
+        const gridEl = document.getElementById('mobileCardGrid');
+        const redeemSec = document.getElementById('mobileRedeemSection');
+
+        if (!mobileState.cardId) {
+          badge.textContent = '尚未綁定卡號';
+          statusEl.className = 'mobile-status-bar';
+          statusEl.textContent = '請掃描紙卡 QR Code，或在上方輸入你的紙卡編號綁定';
+          gridEl.innerHTML = '';
+          redeemSec.style.display = 'none';
+          return;
+        }
+
+        const code = padCardCode(mobileState.cardId, state.totalCards || 100);
+        badge.textContent = `我的卡號：${code}`;
+        document.getElementById('mobileCardInput').value = String(mobileState.cardId);
+
+        // Show Redemption QR so staff can scan employee phone at stage
+        redeemSec.style.display = 'block';
+        const redeemPayload = `BINGO-CARD:${mobileState.cardId}`;
+        const qrBox = document.getElementById('mobileRedeemQrBox');
+        if (typeof window.qrcode === 'function') {
+          renderQrIntoElement(qrBox, redeemPayload);
+        } else {
+          renderQrIntoElement(qrBox, redeemPayload);
+          loadQrLibrary(() => renderQrIntoElement(qrBox, redeemPayload));
+        }
+
+        if (!mobileState.grid || mobileState.grid.length === 0) {
+          statusEl.className = 'mobile-status-bar';
+          statusEl.innerHTML = `已綁定 <strong>${code}</strong>！請出示下方兌獎 QR 給工作人員掃碼核對，或掃描紙卡上的 QR 載入完整盤面。`;
+          gridEl.innerHTML = '';
+          return;
+        }
+
+        const gSize = mobileState.gridSize || 5;
+        const threshold = mobileState.lineThreshold || 3;
+        const markedSet = new Set([...(mobileState.marked || []), ...(mobileState.syncedDrawn || [])]);
+        const tempCard = { id: mobileState.cardId, code, grid: mobileState.grid };
+        const evalRes = evaluateCard(tempCard, markedSet, gSize, threshold);
+        const lineCells = new Set();
+        evalRes.completedLines.forEach(l => l.forEach(i => lineCells.add(i)));
+
+        // Render Synced Drawn Strip
+        const syncStrip = document.getElementById('mobileSyncedStrip');
+        const syncedList = Array.isArray(mobileState.syncedDrawn) ? mobileState.syncedDrawn : [];
+        if (syncedList.length > 0) {
+          syncStrip.style.display = 'flex';
+          document.getElementById('mobileSyncedCount').textContent = `共 ${syncedList.length} 球`;
+          document.getElementById('mobileSyncedBalls').innerHTML = syncedList.slice().reverse().map(n =>
+            `<span class="mobile-mini-ball">${n}</span>`
+          ).join('');
+        } else {
+          syncStrip.style.display = 'none';
+        }
+
+        const winBtn = document.getElementById('btnMobileShowWinScreen');
+        if (evalRes.isWinner) {
+          statusEl.className = 'mobile-status-bar win';
+          statusEl.innerHTML = `🎉 恭喜達標中獎！（已連成 ${evalRes.lineCount} 條線 / 門檻 ${threshold} 條）請出示核銷 QR 兌獎！`;
+          winBtn.style.display = 'inline-block';
+          // Prepare Winner Overlay content
+          document.getElementById('winOverlayCardCode').textContent = code;
+          document.getElementById('winOverlayDetail').textContent = `已達標連成 ${evalRes.lineCount} 條連線（門檻 ${threshold} 條）`;
+          const overlayQr = document.getElementById('winOverlayQrBox');
+          renderQrIntoElement(overlayQr, redeemPayload);
+          if (!renderMobileView._lastWonKey || renderMobileView._lastWonKey !== `${code}_${evalRes.lineCount}`) {
+            renderMobileView._lastWonKey = `${code}_${evalRes.lineCount}`;
+            document.getElementById('mobileWinOverlay').classList.add('open');
+            playRevealSfx();
+          }
+        } else if (evalRes.isReady) {
+          statusEl.className = 'mobile-status-bar';
+          statusEl.innerHTML = `🔥 聽牌中！已連成 ${evalRes.lineCount} 條線，只差號碼：<strong>${evalRes.missingNumbers.join('、')}</strong>`;
+          winBtn.style.display = 'none';
+        } else {
+          statusEl.className = 'mobile-status-bar';
+          statusEl.textContent = `目前連成 ${evalRes.lineCount} 條線（達標門檻 ${threshold} 條｜已對中 ${markedSet.size} 球）`;
+          winBtn.style.display = 'none';
+        }
+
+        const missingSet = new Set(evalRes.missingNumbers);
+        gridEl.style.gridTemplateColumns = `repeat(${gSize}, 1fr)`;
+        gridEl.innerHTML = mobileState.grid.map((val, idx) => {
+          const isHit = (val === 'FREE') || markedSet.has(val);
+          const isLine = lineCells.has(idx);
+          const isMiss = !isHit && missingSet.has(val);
+          let cls = 'mobile-cell';
+          if (isLine) cls += ' line-win';
+          else if (isHit) cls += ' marked';
+          else if (isMiss) cls += ' missing-one';
+          return `<button type="button" class="${cls}" data-mval="${val}">${val}</button>`;
+        }).join('');
+
+        // Draw glowing golden SVG lines over completed winning lines on employee phone
+        const mSvg = document.getElementById('mobileSvgOverlay');
+        const step = 100 / gSize;
+        mSvg.innerHTML = evalRes.completedLines.map(line => {
+          const first = line[0];
+          const last = line[line.length - 1];
+          const x1 = (first % gSize) * step + step / 2;
+          const y1 = Math.floor(first / gSize) * step + step / 2;
+          const x2 = (last % gSize) * step + step / 2;
+          const y2 = Math.floor(last / gSize) * step + step / 2;
+          return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fde047" stroke-width="3.2" stroke-linecap="round" opacity="0.94" />`;
+        }).join('');
+      }
+
+      function checkUrlParamsForMobileMode() {
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('m');
+        if (!mode) return false;
+
+        mobileState = loadMobileState();
+        const titleParam = params.get('n');
+        if (titleParam) mobileState.eventTitle = decodeURIComponent(titleParam);
+
+        const gParam = parseInt(params.get('g'), 10);
+        if (gParam === 3 || gParam === 5) mobileState.gridSize = gParam;
+        const tParam = parseInt(params.get('t'), 10);
+        if (tParam >= 1 && tParam <= 12) mobileState.lineThreshold = tParam;
+
+        if (mode === '1') {
+          const cid = parseInt(params.get('c'), 10);
+          const k = params.get('k');
+          if (cid >= 1) mobileState.cardId = cid;
+          if (k) {
+            const decoded = decodeNumbersB64(k);
+            if (decoded.length === 25 || decoded.length === 9) {
+              mobileState.grid = decoded;
+            }
+          }
+          saveMobileState();
+          enterMobileMode();
+          return true;
+        }
+
+        if (mode === 'sync') {
+          const sParam = params.get('s');
+          if (sParam !== null) {
+            mobileState.syncedDrawn = decodeNumbersB64(sParam).filter(v => typeof v === 'number');
+          }
+          saveMobileState();
+          enterMobileMode();
+          showToast(`已同步大螢幕最新開獎進度（共 ${mobileState.syncedDrawn.length} 球）`);
+          return true;
+        }
+        return false;
+      }
+
+      /* ---------- HOST CAMERA QR SCANNER ---------- */
+      let camStream = null;
+      let camScanRaf = null;
+
+      function stopCameraScanner() {
+        if (camScanRaf) {
+          cancelAnimationFrame(camScanRaf);
+          camScanRaf = null;
+        }
+        if (camStream) {
+          camStream.getTracks().forEach(t => t.stop());
+          camStream = null;
+        }
+        const vid = document.getElementById('camScanVideo');
+        if (vid) vid.srcObject = null;
+        closeModal('modalCamScan');
+      }
+
+      async function startCameraScanner() {
+        openModal('modalCamScan');
+        const statusEl = document.getElementById('camScanStatus');
+        const video = document.getElementById('camScanVideo');
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          statusEl.textContent = '目前瀏覽器不支援攝影機存取（請使用 HTTPS / GitHub Pages，或直接接 USB 掃碼槍於輸入框掃描）';
+          return;
+        }
+
+        try {
+          statusEl.textContent = '正在啟動攝影機...';
+          camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          video.srcObject = camStream;
+          await video.play();
+
+          if (!('BarcodeDetector' in window)) {
+            statusEl.textContent = '攝影機已啟動，但此瀏覽器未內建原生 QR 解碼器。建議使用 Chrome / Edge，或直接使用 USB 掃碼槍掃描！';
+            return;
+          }
+
+          const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          statusEl.textContent = '✅ 鏡頭就緒！請將紙卡或手機兌獎 QR 對準畫面...';
+
+          const scanLoop = async () => {
+            if (!camStream) return;
+            try {
+              const codes = await detector.detect(video);
+              if (codes && codes.length > 0) {
+                const raw = codes[0].rawValue || '';
+                const inMobile = document.body.classList.contains('mobile-mode-active');
+                if (inMobile) {
+                  try {
+                    const u = new URL(raw);
+                    const p = u.searchParams;
+                    if (p.get('m') === 'sync' && p.get('s') !== null) {
+                      stopCameraScanner();
+                      mobileState.syncedDrawn = decodeNumbersB64(p.get('s')).filter(v => typeof v === 'number');
+                      const tVal = parseInt(p.get('t'), 10);
+                      if (tVal >= 1 && tVal <= 12) mobileState.lineThreshold = tVal;
+                      saveMobileState();
+                      renderMobileView();
+                      showToast(`已同步大螢幕最新開獎（共 ${mobileState.syncedDrawn.length} 球）`);
+                      return;
+                    }
+                    if (p.get('m') === '1' && p.get('c')) {
+                      stopCameraScanner();
+                      mobileState.cardId = parseInt(p.get('c'), 10);
+                      if (p.get('k')) {
+                        const dec = decodeNumbersB64(p.get('k'));
+                        if (dec.length === 25 || dec.length === 9) mobileState.grid = dec;
+                      }
+                      const gVal = parseInt(p.get('g'), 10);
+                      if (gVal === 3 || gVal === 5) mobileState.gridSize = gVal;
+                      const tVal = parseInt(p.get('t'), 10);
+                      if (tVal >= 1 && tVal <= 12) mobileState.lineThreshold = tVal;
+                      saveMobileState();
+                      renderMobileView();
+                      showToast(`已掃碼綁定紙卡 No.${String(mobileState.cardId).padStart(3, '0')}`);
+                      return;
+                    }
+                  } catch (e) {}
+                  const idOnly = extractCardIdFromInput(raw);
+                  if (!isNaN(idOnly) && idOnly >= 1) {
+                    stopCameraScanner();
+                    mobileState.cardId = idOnly;
+                    saveMobileState();
+                    renderMobileView();
+                    showToast(`已綁定卡號 No.${String(idOnly).padStart(3, '0')}`);
+                    return;
+                  }
+                } else {
+                  const id = extractCardIdFromInput(raw);
+                  if (!isNaN(id) && id >= 1) {
+                    stopCameraScanner();
+                    document.getElementById('verifyCardInput').value = String(id);
+                    openCardVerifyModal(id);
+                    return;
+                  }
+                }
+              }
+            } catch (e) {}
+            camScanRaf = requestAnimationFrame(scanLoop);
+          };
+          camScanRaf = requestAnimationFrame(scanLoop);
+        } catch (err) {
+          statusEl.textContent = '無法開啟攝影機（可能未授權或無鏡頭），可直接接 USB 掃碼槍或手動輸入卡號驗卡。';
+        }
+      }
+
+      function bindMobileAndQrEvents() {
+        // Big screen Sync QR modal
+        document.getElementById('btnShowSyncQr').addEventListener('click', () => {
+          const url = buildStageSyncUrl();
+          document.getElementById('syncQrDrawnCount').textContent = String(state.drawnNumbers.length);
+          document.getElementById('syncQrUrlHint').textContent = url;
+          const box = document.getElementById('syncQrCanvasBox');
+          if (typeof window.qrcode === 'function') {
+            renderQrIntoElement(box, url);
+          } else {
+            renderQrIntoElement(box, url);
+            loadQrLibrary(() => renderQrIntoElement(box, url));
+          }
+          openModal('modalSyncQr');
+        });
+
+        document.getElementById('btnCopySyncUrl').addEventListener('click', () => {
+          const url = buildStageSyncUrl();
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => showToast('已複製手機對獎連結')).catch(() => fallbackCopy(url));
+          } else {
+            fallbackCopy(url);
+          }
+        });
+
+        function fallbackCopy(text) {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); showToast('已複製手機對獎連結'); } catch (e) {}
+          document.body.removeChild(ta);
+        }
+
+        document.getElementById('btnPreviewMobile').addEventListener('click', () => {
+          closeModal('modalSyncQr');
+          mobileState = loadMobileState();
+          mobileState.eventTitle = state.eventTitle;
+          mobileState.gridSize = state.gridSize;
+          mobileState.lineThreshold = state.lineThreshold;
+          mobileState.syncedDrawn = [...state.drawnNumbers];
+          if (!mobileState.cardId && state.cards.length > 0) {
+            mobileState.cardId = state.cards[0].id;
+            mobileState.grid = [...state.cards[0].grid];
+          }
+          saveMobileState();
+          enterMobileMode();
+        });
+
+        // Camera scanner button
+        document.getElementById('btnCamScan').addEventListener('click', startCameraScanner);
+        document.getElementById('btnCloseCamScan').addEventListener('click', stopCameraScanner);
+
+        // Mobile view controls
+        document.getElementById('btnMobileBindCard').addEventListener('click', () => {
+          const id = extractCardIdFromInput(document.getElementById('mobileCardInput').value);
+          if (isNaN(id) || id < 1) {
+            showToast('請輸入有效卡號（例如 15）');
+            return;
+          }
+          mobileState.cardId = id;
+          // If same browser has full card pool, auto-load grid too
+          const localMatch = state.cards.find(c => c.id === id);
+          if (localMatch) {
+            mobileState.grid = [...localMatch.grid];
+            mobileState.gridSize = state.gridSize;
+            mobileState.lineThreshold = state.lineThreshold;
+          } else {
+            mobileState.grid = [];
+          }
+          saveMobileState();
+          renderMobileView();
+          showToast(`已綁定卡號 No.${String(id).padStart(3, '0')}`);
+        });
+
+        document.getElementById('mobileCardGrid').addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-mval]');
+          if (!btn) return;
+          const raw = btn.dataset.mval;
+          if (raw === 'FREE') return;
+          const num = parseInt(raw, 10);
+          const set = new Set(mobileState.marked || []);
+          if (set.has(num)) set.delete(num);
+          else set.add(num);
+          mobileState.marked = Array.from(set);
+          saveMobileState();
+          renderMobileView();
+        });
+
+        document.getElementById('btnMobileClearMarks').addEventListener('click', () => {
+          mobileState.marked = [];
+          saveMobileState();
+          renderMobileView();
+          showToast('已清除手動標記');
+        });
+
+        document.getElementById('btnMobileScanQr').addEventListener('click', startCameraScanner);
+        document.getElementById('btnMobileShowWinScreen').addEventListener('click', () => {
+          document.getElementById('mobileWinOverlay').classList.add('open');
+        });
+        document.getElementById('btnCloseWinOverlay').addEventListener('click', () => {
+          document.getElementById('mobileWinOverlay').classList.remove('open');
+        });
+        document.getElementById('btnExitMobileMode').addEventListener('click', exitMobileMode);
+      }
+
+      /* ============================================================
          10. BOOTSTRAP
       ============================================================ */
       window.addEventListener('DOMContentLoaded', () => {
@@ -4386,9 +5329,14 @@
           initPhysicsBalls();
         }
         bindEvents();
+        bindMobileAndQrEvents();
         initDraggableTrack();
         initDraggableGuide();
+        loadQrLibrary(() => {
+          renderAllPrintCardQrs();
+        });
         renderAll();
+        checkUrlParamsForMobileMode();
         tryLoadThreeJS();
         animFrameId = requestAnimationFrame(mainLoop);
       });
